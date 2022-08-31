@@ -25,7 +25,7 @@ def calc_2d_point(x, y, A_rel, std_cen, std_sur):
 def calc_1d_point(x, A_rel, std_cen, std_sur):
     return np.exp((-x**2)/(2*std_cen**2)) - A_rel*np.exp((-x**2)/(2*std_sur**2))
 
-res = 5
+res = 1
 max_angle = 30
 min_angle = -30
 axis = np.arange(min_angle, max_angle+res, res)

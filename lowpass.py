@@ -5,19 +5,21 @@ from frequency_response import sample_frequency_response
 
 from sns_toolbox.networks import Network
 from sns_toolbox.neurons import NonSpikingNeuron
+from neurons_and_networks import filter_lowpass
 
 # dt = 0.1    # ms
 
-net = Network()
+# net = Network()
 dt = 0.1
 cutoff = 10
-sample_freq = 1000/dt
-w_cutoff = 2*np.pi/sample_freq*cutoff
-alpha = np.cos(w_cutoff) - 1 + np.sqrt((np.cos(w_cutoff))**2 - 4*np.cos(w_cutoff) + 3)
-cap = dt/alpha
-print(cap)
-neuron_type = NonSpikingNeuron(membrane_conductance=1.0, membrane_capacitance=cap)
-net.add_neuron(neuron_type)
+# sample_freq = 1000/dt
+# w_cutoff = 2*np.pi/sample_freq*cutoff
+# alpha = np.cos(w_cutoff) - 1 + np.sqrt((np.cos(w_cutoff))**2 - 4*np.cos(w_cutoff) + 3)
+# cap = dt/alpha
+# print(cap)
+# neuron_type = NonSpikingNeuron(membrane_conductance=1.0, membrane_capacitance=cap)
+# net.add_neuron(neuron_type)
+net = filter_lowpass(cutoff, dt)
 net.add_input(0)
 net.add_output(0,spiking=False)
 
@@ -37,9 +39,9 @@ fig, _, _ = sample_frequency_response(model, low_hz=0.1, high_hz=100, num_sample
 # print(calc2)
 
 # Calculated cutoff 3
-alpha = dt/cap
-calc3 = sample_freq/(2*np.pi)*np.arccos(1-(alpha**2)/(2*(1-alpha)))
-print(calc3)
+# alpha = dt/cap
+# calc3 = sample_freq/(2*np.pi)*np.arccos(1-(alpha**2)/(2*(1-alpha)))
+# print(calc3)
 
 # # Calcualted cutoff 4
 # sample_freq = 1/(dt)
@@ -59,7 +61,7 @@ print(calc3)
 
 # plt.axvline(x=calc1, color='orange', label='Calc1')
 # plt.axvline(x=calc2, color='green', label='Calc2')
-plt.axvline(x=calc3, color='red', label='Cutoff Freq')
+plt.axvline(x=cutoff, color='red', label='Cutoff Freq')
 # plt.axvline(x=calc4, color='blue', label='Calc4')
 # plt.axvline(x=calc5, color='black', label='Calc5')
 # plt.axvline(x=calc6, color='cyan', label='Calc6')

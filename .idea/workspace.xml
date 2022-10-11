@@ -2,14 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="ca06af2c-63e4-476a-a3f3-c9eca6468339" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/analyze_data.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/highpass.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/Motion-Vision-SNS.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Motion-Vision-SNS.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frequency_response.py" beforeDir="false" afterPath="$PROJECT_DIR$/frequency_response.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lowpass.py" beforeDir="false" afterPath="$PROJECT_DIR$/lowpass.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/neurons_and_networks.py" beforeDir="false" afterPath="$PROJECT_DIR$/neurons_and_networks.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Receptive Field Reconstruction/borst_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/Receptive Field Reconstruction/borst_data.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,7 +37,7 @@
     &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
 }</component>
-  <component name="RunManager" selected="Python.highpass">
+  <component name="RunManager" selected="Python.borst_data">
     <configuration name="analyze_data" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Motion-Vision-SNS" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -128,10 +124,10 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.borst_data" />
         <item itemvalue="Python.highpass" />
         <item itemvalue="Python.analyze_data" />
         <item itemvalue="Python.lowpass" />
-        <item itemvalue="Python.borst_data" />
       </list>
     </recent_temporary>
   </component>
@@ -156,21 +152,5 @@
         </entry>
       </map>
     </option>
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/analyze_data.py</url>
-          <line>29</line>
-          <option name="timeStamp" value="2" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/neurons_and_networks.py</url>
-          <line>41</line>
-          <option name="timeStamp" value="3" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>

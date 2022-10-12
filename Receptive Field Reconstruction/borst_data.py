@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 def FWHM_to_std(FWHM):
     std = FWHM/(2*np.sqrt(2*np.log(2)))
-    print(std)
+    # print(std)
     return std
 
 def calc_2d_point(x, y, A_rel, std_cen, std_sur):

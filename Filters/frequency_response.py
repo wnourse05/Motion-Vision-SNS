@@ -50,7 +50,7 @@ def sample_frequency_response(model: Backend, low_hz=0.1, high_hz=100, num_sampl
         plt.subplot(2,1,1)
         plt.plot(frequencies, 20*np.log10(output_peaks), label='Magnitude Response')
         plt.axhline(y=20*np.log10(1/np.sqrt(2)), color='black', label='Cutoff Threshold')
-        # plt.xlabel('f (Hz)')
+        # plt.xlabel('freq (Hz)')
         plt.xscale('log')
         plt.ylabel('Magnitude (dB)')
         plt.title('Magnitude Response')
@@ -58,7 +58,7 @@ def sample_frequency_response(model: Backend, low_hz=0.1, high_hz=100, num_sampl
 
         plt.subplot(2,1,2)
         plt.plot(frequencies, phase_diff_deg, label='Phase Response')
-        plt.xlabel('f (Hz)')
+        plt.xlabel('freq (Hz)')
         plt.ylabel('Phase (deg)')
         plt.xscale('log')
         plt.title('Phase Response')

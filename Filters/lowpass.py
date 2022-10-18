@@ -13,7 +13,7 @@ net.add_output(0,spiking=False)
 
 model = net.compile(backend='numpy',dt=dt)
 
-frequencies, output_peaks, phase_diff_deg = sample_frequency_response(model, low_hz=0.1, high_hz=1000, num_samples=100, plot=False, debug=False)
+frequencies, output_peaks, phase_diff_deg = sample_frequency_response(model, low_hz=0.1, high_hz=1000, num_samples=10, plot=False, debug=True)
 
 data = {'frequencies': frequencies, 'outputPeaks': output_peaks, 'phaseDiff': phase_diff_deg, 'dt': dt, 'cutoff': cutoff}
 

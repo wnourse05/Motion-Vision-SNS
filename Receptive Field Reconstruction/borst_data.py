@@ -8,6 +8,7 @@ April 29th, 2022
 import matplotlib.colors
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
 
 """Helper Functions"""
 
@@ -78,6 +79,12 @@ medulla_off = {'title':      title[4:],
                'std_sur':    FWHM_to_std(FWHM_sur[4:]),
                'polarity':   polarity[4:]}
 
+data = {'lamina': lamina,
+        'medullaOn': medulla_on,
+        'medullaOff': medulla_off}
+
+pickle.dump(data, open('borst_receptive_fields.p', 'wb'))
+
 """Plotting"""
 
 res = 5
@@ -91,28 +98,5 @@ norm = plt.Normalize(-1,1)
 fig_lamina = plot_fields(lamina, res, max_angle, min_angle, cmap, norm)
 fig_medulla_on = plot_fields(medulla_on, res, max_angle, min_angle, cmap, norm)
 fig_medulla_off = plot_fields(medulla_off, res, max_angle, min_angle, cmap, norm)
-
-# plt.figure()
-# for neuron in range(split):
-#     plt.subplot(2,4,neuron+1)
-#     field_2d = np.zeros([len(axis),len(axis)])
-#     for i in range(len(axis)):
-#         for j in range(len(axis)):
-#             field_2d[i,j] = polarity[neuron] * calc_2d_point(axis[i], axis[j], A_rel[neuron], std_cen[neuron], std_sur[neuron])
-#     plt.imshow(field_2d, extent=[axis[0],axis[-1],axis[0],axis[-1]],cmap=cmap,norm=norm)
-#     plt.colorbar()
-#     plt.title(title[neuron])
-#     plt.xlabel('Azimuth (deg)')
-#     plt.ylabel('Elevation (deg)')
-#
-#     plt.subplot(2,4,neuron+5)
-#     field_1d = np.zeros(len(axis))
-#     for i in range(len(axis)):
-#         field_1d[i] = polarity[neuron] * calc_1d_point(axis[i], A_rel[neuron], std_cen[neuron], std_sur[neuron])
-#
-#     plt.plot(axis,field_1d)
-#     plt.xlabel('Angle (deg)')
-#     plt.ylabel('Response')
-
 
 plt.show()

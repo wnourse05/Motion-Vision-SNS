@@ -83,7 +83,7 @@ def collect_data(g_sub, dt, cutoff_low, cutoff_high, R):
     return peaks_low, peaks_high
 
 
-g_sub = np.linspace(0.00001,1.0, num=50)
+g_sub = np.linspace(0.00001,0.4, num=50)
 
 peaks_low, peaks_high = collect_data(g_sub, dt, cutoff_low, cutoff_high, R)
 

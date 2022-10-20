@@ -2,14 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="ca06af2c-63e4-476a-a3f3-c9eca6468339" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Filters/optimize_bandpass.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Motion-Vision-SNS.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Motion-Vision-SNS.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Filters/bandpass tune.py" beforeDir="false" afterPath="$PROJECT_DIR$/Filters/bandpass tune.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Filters/bandpass.py" beforeDir="false" afterPath="$PROJECT_DIR$/Filters/bandpass.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Filters/data_bandpass.p" beforeDir="false" afterPath="$PROJECT_DIR$/Filters/data_bandpass.p" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Filters/data_bandpass_test.p" beforeDir="false" afterPath="$PROJECT_DIR$/Filters/data_bandpass_test.p" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

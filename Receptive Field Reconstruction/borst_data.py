@@ -29,7 +29,7 @@ def plot_fields(data, res, max_angle, min_angle, cmap, norm, num_neurons):
     # num_neurons = len(data['title'])
     axis = np.arange(min_angle, max_angle + res, res)
     for neuron in range(num_neurons):
-        plt.subplot(4, num_neurons, neuron+1)
+        plt.subplot(5, num_neurons, neuron+1)
         field_2d = np.zeros([len(axis), len(axis)])
         for i in range(len(axis)):
             for j in range(len(axis)):
@@ -40,7 +40,7 @@ def plot_fields(data, res, max_angle, min_angle, cmap, norm, num_neurons):
         plt.xlabel('Azimuth (deg)')
         plt.ylabel('Elevation (deg)')
 
-        plt.subplot(4, num_neurons, neuron+1+num_neurons)
+        plt.subplot(5, num_neurons, neuron+1+num_neurons)
         field_1d = np.zeros(len(axis))
         for i in range(len(axis)):
             field_1d[i] = data['polarity'][neuron] * calc_1d_point(axis[i], data['A_rel'][neuron], data['std_cen'][neuron], data['std_sur'][neuron])
@@ -65,7 +65,7 @@ def plot_step_response(data,  num_neurons):
             b,a = signal.butter(1, [highcut, lowcut], 'band', analog=True)
         t, y = signal.step((b,a))
         x = np.ones_like(t)
-        plt.subplot(4,num_neurons, neuron+1+2*num_neurons)
+        plt.subplot(5,num_neurons, neuron+1+2*num_neurons)
         plt.plot(t, y*data['polarity'][neuron], label='Response')
         plt.plot(t, x*data['polarity'][neuron], color='black', linestyle='--', label='Step')
 
@@ -84,12 +84,28 @@ def plot_freq_response(data, num_neurons):
             # print(lowcut, highcut)
             b,a = signal.butter(1, [highcut, lowcut], 'band', analog=True)
         w,h = signal.freqs(b,a, worN=np.linspace(0.1*2*np.pi, 10*2*np.pi, num=2000))
-        plt.subplot(4,num_neurons,neuron+1+3*num_neurons)
+        plt.subplot(5,num_neurons,neuron+1+3*num_neurons)
         plt.semilogx(w,20*np.log10(abs(h)))
         plt.axhline(-3,color='black',ls='--')
         plt.ylim([-30,5])
         plt.xlabel('Frequency (rad/s)')
         plt.ylabel('Amplitude Response')
+
+def plot_field_ratio(data, res, max_angle, min_angle, num_neurons):
+    axis = np.arange(0, max((abs(min_angle), abs(max_angle))) + res, res)
+    for neuron in range(num_neurons):
+        plt.subplot(5, num_neurons, neuron + 1 + 4*num_neurons)
+
+        field_1d = np.zeros(len(axis))
+        for i in range(len(axis)):
+            field_1d[i] = calc_1d_point(axis[i], data['A_rel'][neuron],data['std_cen'][neuron], data['std_sur'][neuron])
+
+        peak_mag = max(abs(field_1d))
+        field_norm = abs(field_1d)/peak_mag
+
+        plt.plot(axis, field_norm)
+        plt.xlabel('Angle (deg)')
+        plt.ylabel('Response Ratio')
 
 def plot_properties(data, res, max_angle, min_angle, cmap, norm):
     fig = plt.figure()
@@ -101,6 +117,7 @@ def plot_properties(data, res, max_angle, min_angle, cmap, norm):
     plot_fields(data, res, max_angle, min_angle, cmap, norm, num_neurons)
     plot_step_response(data, num_neurons)
     plot_freq_response(data, num_neurons)
+    plot_field_ratio(data, res, max_angle, min_angle, num_neurons)
     return fig
 
 # def plot_freq_response(data, dt):

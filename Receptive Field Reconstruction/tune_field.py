@@ -156,7 +156,10 @@ def tune_bandpass(target, t, params_neuron, data_ref, index, plot, debug):
     bound_g_lo = 0.0
     bound_g_hi = 1.0
     bound_del_e_lo = rest - 3
-    bound_del_e_hi = rest + 3
+    if polarity < 0:
+        bound_del_e_hi = rest
+    else:
+        bound_del_e_hi = rest + 3
     slope_g = bound_g_hi - bound_g_lo
     slope_del_e = bound_del_e_hi - bound_del_e_lo
 
@@ -176,9 +179,9 @@ def tune_bandpass(target, t, params_neuron, data_ref, index, plot, debug):
 
     error_sq = peak_error_bandpass(t, g_ret, del_e_ret, params_neuron, rest, stim, polarity, target, loss_sq)
 
-    # if plot:
-    #     plt.figure()
-    #     plt.plot(t, run_bandpass(t, g_ret, del_e_ret, params_L1, rest, stim))
+    if plot:
+        plt.figure()
+        plt.plot(t, run_bandpass(t, g_ret, del_e_ret, params_neuron, rest, stim))
 
     return g_ret, del_e_ret, peak, error_sq
 
@@ -353,10 +356,21 @@ params_L5 = pickle.load(open('L5_params.p', 'rb'))
 plot = True
 debug = True
 
+# dt = 0.1
+# t = np.arange(0,1.0,dt/1000)
+# del_e = np.linspace(-2,4,num=10)
+# # plt.figure()
+# for val in del_e:
+#     peak = peak_bandpass(t, 1.0, val, params_L1, 1.0, 1.0, -1.0)
+#     # y = run_bandpass(t, 1.0, val, params_L1, 1.0, 1.0)
+#     # plt.plot(t,y, label=str(val))
+#     print(val, peak)
+# # plt.legend()
+
 tune_neuron(lamina_data, 0, params_L1, plot, debug)
 tune_neuron(lamina_data, 1, params_L2, plot, debug)
 tune_neuron(lamina_data, 2, params_L3, plot, debug)
 tune_neuron(lamina_data, 3, params_L4, plot, debug)
-# tune_neuron(lamina_data, 4, params_L5, plot, debug)
+tune_neuron(lamina_data, 4, params_L5, plot, debug)
 
 plt.show()

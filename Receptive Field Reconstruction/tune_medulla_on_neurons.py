@@ -3,10 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 from scipy import signal
+import sys
 import scipy.optimize as optimize
 from sns_toolbox.networks import Network
 from sns_toolbox.neurons import NonSpikingNeuron
 from sns_toolbox.connections import NonSpikingSynapse
+
+# Personal stuff to send an email once data collection is finished
+sys.path.extend(['/home/will'])
+from email_utils import send_email
 
 def calc_1d_point(x, A_rel, std_cen, std_sur):
     return np.exp((-x**2)/(2*std_cen**2)) - A_rel*np.exp((-x**2)/(2*std_sur**2))
@@ -282,4 +287,6 @@ tune_neuron(medulla_on, 1, min_angle=-(res*2), max_angle=res*2, res=res)
 tune_neuron(medulla_on, 2, min_angle=-(res*2), max_angle=res*2, res=res)
 tune_neuron(medulla_on, 3, min_angle=-(res*2), max_angle=res*2, res=res)
 tune_neuron(medulla_on, 4, min_angle=-(res*2), max_angle=res*2, res=res)
+
+send_email('wrn13@case.edu')
 plt.show()

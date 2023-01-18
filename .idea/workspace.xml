@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ca06af2c-63e4-476a-a3f3-c9eca6468339" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Receptive Field Reconstruction/Mi1_params.p" beforeDir="false" afterPath="$PROJECT_DIR$/Receptive Field Reconstruction/Mi1_params.p" afterDir="false" />
-    </list>
+    <list default="true" id="ca06af2c-63e4-476a-a3f3-c9eca6468339" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -47,7 +44,7 @@
       <recent name="$PROJECT_DIR$/Receptive Field Reconstruction" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.borst_data">
+  <component name="RunManager" selected="Python.tune_medulla_on_neurons">
     <configuration name="borst_data" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Motion-Vision-SNS" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -162,8 +159,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.borst_data" />
         <item itemvalue="Python.tune_medulla_on_neurons" />
+        <item itemvalue="Python.borst_data" />
         <item itemvalue="Python.motion_vision_network" />
         <item itemvalue="Python.tune_lamina_fields" />
         <item itemvalue="Python.tune_lamina_neurons" />

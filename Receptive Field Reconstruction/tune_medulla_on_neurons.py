@@ -282,11 +282,20 @@ borst_data = pickle.load(open('borst_data.p', 'rb'))
 medulla_on = borst_data['medullaOn']
 
 res = 5
-tune_neuron(medulla_on, 0, min_angle=-(res*2), max_angle=res*2, res=res)
-tune_neuron(medulla_on, 1, min_angle=-(res*2), max_angle=res*2, res=res)
-tune_neuron(medulla_on, 2, min_angle=-(res*2), max_angle=res*2, res=res)
-tune_neuron(medulla_on, 3, min_angle=-(res*2), max_angle=res*2, res=res)
-tune_neuron(medulla_on, 4, min_angle=-(res*2), max_angle=res*2, res=res)
+
+# tune_neuron(medulla_on, 0, min_angle=-(res*2), max_angle=res*2, res=res)
+try:
+    tune_neuron(medulla_on, 1, min_angle=-(res*2), max_angle=res*2, res=res)
+except:
+    print('Tm3 Failed. Moving On')
+try:
+    tune_neuron(medulla_on, 2, min_angle=-(res*2), max_angle=res*2, res=res)
+except:
+    print('Mi4 Failed. Moving On')
+try:
+    tune_neuron(medulla_on, 3, min_angle=-(res*2), max_angle=res*2, res=res)
+except:
+    print('Mi9 Failed. Moving On')
 
 send_email('wrn13@case.edu')
 plt.show()

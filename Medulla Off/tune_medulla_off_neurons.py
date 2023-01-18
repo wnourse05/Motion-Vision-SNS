@@ -278,7 +278,7 @@ def tune_neuron(data, index, res=5, min_angle=-20, max_angle=20, plot=True, dt=0
         plt.ylabel('Response')
         plt.title('Fitted Response')
 
-borst_data = pickle.load(open('borst_data.p', 'rb'))
+borst_data = pickle.load(open('../Original Data/borst_data.p', 'rb'))
 medulla_off = borst_data['medullaOff']
 
 res = 5

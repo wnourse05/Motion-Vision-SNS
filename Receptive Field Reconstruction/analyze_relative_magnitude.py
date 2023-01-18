@@ -20,7 +20,7 @@ def gen_bar_chart(dataset, axis, width, offset):
     return i+offset+1, data, normalized_data, peak_vals
 
 
-field_data = pickle.load(open('borst_receptive_fields.p', 'rb'))
+field_data = pickle.load(open('../Original Data/borst_data.p', 'rb'))
 
 res = 5
 max_angle = 0

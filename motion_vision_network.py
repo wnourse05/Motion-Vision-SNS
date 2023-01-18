@@ -125,16 +125,16 @@ def create_lowpass_lamina(net, params_neuron, params_field, neuron_name):
 
     net.add_output(neuron_name, neuron_name+' Output')
 
-params_neuron_L1 = pickle.load(open('Receptive Field Reconstruction/L1_params.p', 'rb'))
-params_field_L1 = pickle.load(open('Receptive Field Reconstruction/L1_field_params.p', 'rb'))
-params_neuron_L2 = pickle.load(open('Receptive Field Reconstruction/L2_params.p', 'rb'))
-params_field_L2 = pickle.load(open('Receptive Field Reconstruction/L2_field_params.p', 'rb'))
-params_neuron_L3 = pickle.load(open('Receptive Field Reconstruction/L3_params.p', 'rb'))
-params_field_L3 = pickle.load(open('Receptive Field Reconstruction/L3_field_params.p', 'rb'))
-params_neuron_L4 = pickle.load(open('Receptive Field Reconstruction/L4_params.p', 'rb'))
-params_field_L4 = pickle.load(open('Receptive Field Reconstruction/L4_field_params.p', 'rb'))
-params_neuron_L5 = pickle.load(open('Receptive Field Reconstruction/L5_params.p', 'rb'))
-params_field_L5 = pickle.load(open('Receptive Field Reconstruction/L5_field_params.p', 'rb'))
+params_neuron_L1 = pickle.load(open('Lamina/L1_params.p', 'rb'))
+params_field_L1 = pickle.load(open('Lamina/L1_field_params.p', 'rb'))
+params_neuron_L2 = pickle.load(open('Lamina/L2_params.p', 'rb'))
+params_field_L2 = pickle.load(open('Lamina/L2_field_params.p', 'rb'))
+params_neuron_L3 = pickle.load(open('Lamina/L3_params.p', 'rb'))
+params_field_L3 = pickle.load(open('Lamina/L3_field_params.p', 'rb'))
+params_neuron_L4 = pickle.load(open('Lamina/L4_params.p', 'rb'))
+params_field_L4 = pickle.load(open('Lamina/L4_field_params.p', 'rb'))
+params_neuron_L5 = pickle.load(open('Lamina/L5_params.p', 'rb'))
+params_field_L5 = pickle.load(open('Lamina/L5_field_params.p', 'rb'))
 
 create_bandpass_lamina(net, params_neuron_L1, params_field_L1, 'L1')    # L1
 create_bandpass_lamina(net, params_neuron_L2, params_field_L2, 'L2')    # L2

@@ -3,10 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 from scipy import signal
+import sys
 import scipy.optimize as optimize
 from sns_toolbox.networks import Network
 from sns_toolbox.neurons import NonSpikingNeuron
 from sns_toolbox.connections import NonSpikingSynapse
+
+# Personal stuff to send an email once data collection is finished
+sys.path.extend(['/home/will'])
+from email_utils import send_email
 
 def calc_1d_point(x, A_rel, std_cen, std_sur):
     return np.exp((-x**2)/(2*std_cen**2)) - A_rel*np.exp((-x**2)/(2*std_sur**2))
@@ -273,13 +278,24 @@ def tune_neuron(data, index, res=5, min_angle=-20, max_angle=20, plot=True, dt=0
         plt.ylabel('Response')
         plt.title('Fitted Response')
 
-borst_data = pickle.load(open('borst_data.p', 'rb'))
-lamina = borst_data['lamina']
+borst_data = pickle.load(open('../Original Data/borst_data.p', 'rb'))
+medulla_on = borst_data['medullaOn']
 
 res = 5
-tune_neuron(lamina, 0, min_angle=-(res*2), max_angle=res*2, res=res)
-tune_neuron(lamina, 1, min_angle=-(res*2), max_angle=res*2, res=res)
-tune_neuron(lamina, 2, min_angle=-(res*2), max_angle=res*2, res=res)
-tune_neuron(lamina, 3, min_angle=-(res*2), max_angle=res*2, res=res)
-tune_neuron(lamina, 4, min_angle=-(res*2), max_angle=res*2, res=res)
+
+# tune_neuron(medulla_on, 0, min_angle=-(res*2), max_angle=res*2, res=res)
+try:
+    tune_neuron(medulla_on, 1, min_angle=-(res*2), max_angle=res*2, res=res)
+except:
+    print('Tm3 Failed. Moving On')
+# try:
+#     tune_neuron(medulla_on, 2, min_angle=-(res*2), max_angle=res*2, res=res)
+# except:
+#     print('Mi4 Failed. Moving On')
+# try:
+#     tune_neuron(medulla_on, 3, min_angle=-(res*2), max_angle=res*2, res=res)
+# except:
+#     print('Mi9 Failed. Moving On')
+
+send_email('wrn13@case.edu')
 plt.show()

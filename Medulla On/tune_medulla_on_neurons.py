@@ -211,26 +211,28 @@ def tune_neuron(data, index, res=5, min_angle=-20, max_angle=20, plot=True, dt=0
                   'rest': params_neuron[1]}
     else:
         if data['polarity'][index] > 0:
-            # output = {'g_ab': params_neuron[0],
-            #           'g_ac': params_neuron[0],
-            #           'g_bd': params_neuron[1],
-            #           'g_cd': params_neuron[2],
-            #           'del_e_ab': params_neuron[3],
-            #           'del_e_ac': params_neuron[3],
-            #           'del_e_bd': params_neuron[4],
-            #           'del_e_cd': params_neuron[5],
-            #           'c_fast': data['tau_lp'][index] * 1000,
-            #           'c_slow': data['tau_hp'][index] * 1000}
-            output = {'g_ab': params_neuron[0],
-                      'g_ac': params_neuron[1],
-                      'g_bd': params_neuron[2],
-                      'g_cd': params_neuron[3],
-                      'del_e_ab': params_neuron[4],
-                      'del_e_ac': params_neuron[5],
-                      'del_e_bd': params_neuron[6],
-                      'del_e_cd': params_neuron[7],
-                      'c_fast': data['tau_lp'][index] * 1000,
-                      'c_slow': data['tau_hp'][index] * 1000}
+            if not full:
+                output = {'g_ab': params_neuron[0],
+                          'g_ac': params_neuron[0],
+                          'g_bd': params_neuron[1],
+                          'g_cd': params_neuron[2],
+                          'del_e_ab': params_neuron[3],
+                          'del_e_ac': params_neuron[3],
+                          'del_e_bd': params_neuron[4],
+                          'del_e_cd': params_neuron[5],
+                          'c_fast': data['tau_lp'][index] * 1000,
+                          'c_slow': data['tau_hp'][index] * 1000}
+            else:
+                output = {'g_ab': params_neuron[0],
+                          'g_ac': params_neuron[1],
+                          'g_bd': params_neuron[2],
+                          'g_cd': params_neuron[3],
+                          'del_e_ab': params_neuron[4],
+                          'del_e_ac': params_neuron[5],
+                          'del_e_bd': params_neuron[6],
+                          'del_e_cd': params_neuron[7],
+                          'c_fast': data['tau_lp'][index] * 1000,
+                          'c_slow': data['tau_hp'][index] * 1000}
         else:
             output = {'g_ab': 1.0,
                       'g_ac': 1.0,
@@ -307,19 +309,19 @@ medulla_on = borst_data['medullaOn']
 
 res = 5
 
-# tune_neuron(medulla_on, 0, min_angle=-(res*2), max_angle=res*2, res=res)
-# try:
-tune_neuron(medulla_on, 1, min_angle=-(res*2), max_angle=res*2, res=res, full=True)
-# except:
-#     print('Failed')
-# try:
-#     tune_neuron(medulla_on, 2, min_angle=-(res*2), max_angle=res*2, res=res)
-# except:
-#     print('Mi4 Failed. Moving On')
-# try:
-#     tune_neuron(medulla_on, 3, min_angle=-(res*2), max_angle=res*2, res=res)
-# except:
-#     print('Mi9 Failed. Moving On')
+tune_neuron(medulla_on, 0, min_angle=-(res*2), max_angle=res*2, res=res)
+try:
+    tune_neuron(medulla_on, 1, min_angle=-(res*2), max_angle=res*2, res=res, full=True)
+except:
+    print('Failed')
+try:
+    tune_neuron(medulla_on, 2, min_angle=-(res*2), max_angle=res*2, res=res)
+except:
+    print('Mi4 Failed. Moving On')
+try:
+    tune_neuron(medulla_on, 3, min_angle=-(res*2), max_angle=res*2, res=res)
+except:
+    print('Mi9 Failed. Moving On')
 
-# send_email('wrn13@case.edu')
+send_email('wrn13@case.edu')
 plt.show()

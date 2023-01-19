@@ -33,17 +33,17 @@ def adjust_spatiotemporal_data(t, data, index, R, rest=0.0, res=5, min_angle=-20
                                                                       data['std_cen'][index], data['std_sur'][index])
 
     # Scaled Receptive Field
-    max_val = np.max(field_1d)
-    min_val = np.min(field_1d)
+    max_val = np.max(field_2d)
+    min_val = np.min(field_2d)
     diff = max_val - min_val
-    field_1d_norm = field_1d/diff
-    field_1d_scaled = field_1d_norm*R
-    new_rest = rest-np.min(field_1d_scaled)
-    field_1d_shifted = field_1d_scaled + new_rest
-
-    field_2d_norm = field_2d / diff
-    field_2d_scaled = field_2d_norm * R
+    field_2d_norm = field_2d/diff
+    field_2d_scaled = field_2d_norm*R
+    new_rest = rest-np.min(field_2d_scaled)
     field_2d_shifted = field_2d_scaled + new_rest
+
+    field_1d_norm = field_1d / diff
+    field_1d_scaled = field_1d_norm * R
+    field_1d_shifted = field_1d_scaled + new_rest
 
     # Original Step Response
     lowcut = 1 / (data['tau_lp'][index])
@@ -68,6 +68,7 @@ def adjust_spatiotemporal_data(t, data, index, R, rest=0.0, res=5, min_angle=-20
     y_norm = y/np.abs(peak_y)
     y_scaled = y_norm * peak_diff * polarity
     y_shifted = y_scaled + new_rest
+    y_shifted = y_norm
     # print(np.min(y_shifted), np.max(y_shifted))
     # print(rest-np.min(field_1d_scaled))
 
@@ -129,6 +130,7 @@ def test_lowpass(x_vec, c, rest, stim):
     return y_vec
 
 def test_bandpass(x_vec, g_ab, g_ac, g_bd, g_cd, del_e_ab, del_e_ac, del_e_bd, del_e_cd, c_slow, c_fast, stim, rest):#, c_a, c_b, c_c, c_d):
+    print(g_ab, g_ac, g_bd, g_cd, del_e_ab, del_e_ac, del_e_bd, del_e_cd)
     dt = (x_vec[1] - x_vec[0]) * 1000  # convert from seconds to ms
     c_a = c_fast
     c_b = c_a
@@ -137,9 +139,10 @@ def test_bandpass(x_vec, g_ab, g_ac, g_bd, g_cd, del_e_ab, del_e_ac, del_e_bd, d
 
     model = construct_bandpass(g_ab, g_ac, g_bd, g_cd, del_e_ab, del_e_ac, del_e_bd, del_e_cd, c_a, c_b, c_c, c_d, rest, dt)
     y_vec = run_net(x_vec, model, stim)
+    # plt.plot(x_vec,y_vec)
     return y_vec
 
-def tune_neuron(data, index, res=5, min_angle=-20, max_angle=20, plot=True, dt=0.1):
+def tune_neuron(data, index, res=5, min_angle=-20, max_angle=20, plot=True, dt=0.1, full=False):
     rng = np.random.default_rng(seed=0)
     t = np.arange(0,1.0,dt/1000)
     print(data['title'][index])
@@ -147,6 +150,7 @@ def tune_neuron(data, index, res=5, min_angle=-20, max_angle=20, plot=True, dt=0
     # Compute shifted receptive fields and temporal response
     print('Field')
     axis, field_2d, field_2d_shifted, field_1d, field_1d_shifted, y, y_shifted = adjust_spatiotemporal_data(t, data, index, 1.0, rest=0.0, res=res, min_angle=min_angle, max_angle=max_angle)
+    # plt.plot(t, y_shifted,linestyle='--')
 
     # Tune the neural parameters
     print('Neuron')
@@ -167,16 +171,26 @@ def tune_neuron(data, index, res=5, min_angle=-20, max_angle=20, plot=True, dt=0
         bound_c_lo = dt
         bound_c_hi = np.inf
         if data['polarity'][index] > 0:
-            #           g_ab        g_cd          del_e_bd            del_e_cd
-            bounds = ([bound_g_lo, bound_g_lo, bound_g_lo, bound_del_e_ex_lo, bound_del_e_ex_lo, bound_del_e_in_lo],#, bound_c_lo, bound_c_lo],# bound_c_lo, bound_c_lo],
-                      [bound_g_hi, bound_g_hi, bound_g_hi, bound_del_e_ex_hi, bound_del_e_ex_hi, bound_del_e_in_hi])#, bound_c_hi, bound_c_hi])#, bound_c_hi, bound_c_hi])
-            f = lambda x_vec, g_a, g_bd, g_cd, del_e_a, del_e_bd, del_e_cd: test_bandpass(x_vec, g_a, g_a, g_bd, g_cd,
-                                                                            del_e_a,
-                                                                            del_e_a, del_e_bd, del_e_cd,
-                                                                            data['tau_hp'][index] * 1000,
-                                                                            data['tau_lp'][index] * 1000,
-                                                                            data['polarity'][index],
-                                                                            (-0.5 * data['polarity'][index] + 0.5))
+            if not full:
+                #           g_ab        g_cd          del_e_bd            del_e_cd
+                bounds = ([bound_g_lo, bound_g_lo, bound_g_lo, bound_del_e_ex_lo, bound_del_e_ex_lo, bound_del_e_in_lo],#, bound_c_lo, bound_c_lo],# bound_c_lo, bound_c_lo],
+                          [bound_g_hi, bound_g_hi, bound_g_hi, bound_del_e_ex_hi, bound_del_e_ex_hi, bound_del_e_in_hi])#, bound_c_hi, bound_c_hi])#, bound_c_hi, bound_c_hi])
+                f = lambda x_vec, g_a, g_bd, g_cd, del_e_a, del_e_bd, del_e_cd: test_bandpass(x_vec, g_a, g_a, g_bd, g_cd,
+                                                                                del_e_a,
+                                                                                del_e_a, del_e_bd, del_e_cd,
+                                                                                data['tau_hp'][index] * 1000,
+                                                                                data['tau_lp'][index] * 1000,
+                                                                                data['polarity'][index],
+                                                                                (-0.5 * data['polarity'][index] + 0.5))
+            else:
+                bounds = ([bound_g_lo, bound_g_lo, bound_g_lo, bound_g_lo, bound_del_e_ex_lo, bound_del_e_ex_lo, bound_del_e_ex_lo, bound_del_e_in_lo],
+                          [bound_g_hi, bound_g_hi, bound_g_hi, bound_g_hi, bound_del_e_ex_hi, bound_del_e_ex_hi, bound_del_e_ex_hi, bound_del_e_in_hi])
+                f = lambda x_vec, g_ab, g_ac, g_bd, g_cd, del_e_ab, del_e_ac, del_e_bd, del_e_cd: test_bandpass(x_vec, g_ab, g_ac, g_bd, g_cd, del_e_ab,
+                                                                                              del_e_ac, del_e_bd, del_e_cd,
+                                                                                              data['tau_hp'][index] * 1000,
+                                                                                              data['tau_lp'][index] * 1000,
+                                                                                              data['polarity'][index],
+                                                                                              (-0.5 * data['polarity'][index] + 0.5))
         else:
             bounds = ([bound_g_lo, bound_g_lo, bound_del_e_in_lo, bound_del_e_ex_lo],# bound_c_lo, bound_c_lo],#, bound_c_lo, bound_c_lo],
                       [bound_g_hi, bound_g_hi, bound_del_e_in_hi, bound_del_e_ex_hi])#, bound_c_hi, bound_c_hi])#, bound_c_hi, bound_c_hi])
@@ -197,14 +211,24 @@ def tune_neuron(data, index, res=5, min_angle=-20, max_angle=20, plot=True, dt=0
                   'rest': params_neuron[1]}
     else:
         if data['polarity'][index] > 0:
+            # output = {'g_ab': params_neuron[0],
+            #           'g_ac': params_neuron[0],
+            #           'g_bd': params_neuron[1],
+            #           'g_cd': params_neuron[2],
+            #           'del_e_ab': params_neuron[3],
+            #           'del_e_ac': params_neuron[3],
+            #           'del_e_bd': params_neuron[4],
+            #           'del_e_cd': params_neuron[5],
+            #           'c_fast': data['tau_lp'][index] * 1000,
+            #           'c_slow': data['tau_hp'][index] * 1000}
             output = {'g_ab': params_neuron[0],
-                      'g_ac': params_neuron[0],
-                      'g_bd': params_neuron[1],
-                      'g_cd': params_neuron[2],
-                      'del_e_ab': params_neuron[3],
-                      'del_e_ac': params_neuron[3],
-                      'del_e_bd': params_neuron[4],
-                      'del_e_cd': params_neuron[5],
+                      'g_ac': params_neuron[1],
+                      'g_bd': params_neuron[2],
+                      'g_cd': params_neuron[3],
+                      'del_e_ab': params_neuron[4],
+                      'del_e_ac': params_neuron[5],
+                      'del_e_bd': params_neuron[6],
+                      'del_e_cd': params_neuron[7],
                       'c_fast': data['tau_lp'][index] * 1000,
                       'c_slow': data['tau_hp'][index] * 1000}
         else:
@@ -284,10 +308,10 @@ medulla_on = borst_data['medullaOn']
 res = 5
 
 # tune_neuron(medulla_on, 0, min_angle=-(res*2), max_angle=res*2, res=res)
-try:
-    tune_neuron(medulla_on, 1, min_angle=-(res*2), max_angle=res*2, res=res)
-except:
-    print('Tm3 Failed. Moving On')
+# try:
+tune_neuron(medulla_on, 1, min_angle=-(res*2), max_angle=res*2, res=res, full=True)
+# except:
+#     print('Failed')
 # try:
 #     tune_neuron(medulla_on, 2, min_angle=-(res*2), max_angle=res*2, res=res)
 # except:
@@ -297,5 +321,5 @@ except:
 # except:
 #     print('Mi9 Failed. Moving On')
 
-send_email('wrn13@case.edu')
+# send_email('wrn13@case.edu')
 plt.show()

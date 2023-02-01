@@ -1,4 +1,4 @@
-import pickle
+from utilities import save_data
 
 type = 'lowpass'
 name = 'Retina'
@@ -8,4 +8,6 @@ data = {'name': name,
         'type': type,
         'params': params}
 
-pickle.dump(data, open('params_neuron_retina.p', 'wb'))
+filename = 'params_neuron_retina.p'
+
+save_data(data, filename)

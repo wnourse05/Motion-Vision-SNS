@@ -237,7 +237,7 @@ def graph_data_lamina(params_neuron, params_field, original_data, original_index
 Import Data
 """
 # Original
-borst = pickle.load(open('Original Data/borst_data.p', 'rb'))
+borst = pickle.load(open('../Original Data/borst_data.p', 'rb'))
 borst_lamina = borst['lamina']
 borst_medulla_on = borst['medullaOn']
 borst_medulla_off = borst['medullaOff']

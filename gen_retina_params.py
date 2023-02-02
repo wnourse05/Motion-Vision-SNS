@@ -1,8 +1,8 @@
-from utilities import save_data
+from utilities import save_data, c_fast
 
 type = 'lowpass'
 name = 'Retina'
-params = {'membraneCapacitance': 5.0}
+params = {'membraneCapacitance': c_fast}
 
 data = {'name': name,
         'type': type,

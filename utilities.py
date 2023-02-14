@@ -30,7 +30,7 @@ def synapse_target(target, bias):
 def calc_cap_from_cutoff(cutoff):
     cap = 1000/(2*np.pi*cutoff)
     return cap
-def lowpass_filter(net: Network, cutoff, invert=False, name=None):
+def lowpass_filter(net: Network, cutoff, invert=False, name=None, bias=0.0):
     membrane_conductance = 1.0
     membrane_capacitance = calc_cap_from_cutoff(cutoff)
     if invert:
@@ -39,7 +39,7 @@ def lowpass_filter(net: Network, cutoff, invert=False, name=None):
         rest = 0.0
     if name is None:
         name = 'lowpass'
-    neuron_type = NonSpikingNeuron(membrane_conductance=membrane_conductance, membrane_capacitance=membrane_capacitance, resting_potential=rest)
+    neuron_type = NonSpikingNeuron(membrane_conductance=membrane_conductance, membrane_capacitance=membrane_capacitance, resting_potential=rest, bias=bias)
     net.add_neuron(neuron_type, name=name)
 
 def bandpass_filter(net: Network, cutoff_lower, cutoff_higher, invert=False, name=None):

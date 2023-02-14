@@ -5,7 +5,7 @@ import matplotlib
 from sns_toolbox.neurons import NonSpikingNeuron
 from sns_toolbox.connections import NonSpikingSynapse
 from sns_toolbox.networks import Network
-from utilities import lowpass_filter, bandpass_filter, synapse_target, calc_cap_from_cutoff, activity_range, reversal_ex, reversal_in
+from utilities import add_lowpass_filter, bandpass_filter, synapse_target, calc_cap_from_cutoff, activity_range, reversal_ex, reversal_in
 
 from scipy.optimize import minimize_scalar
 
@@ -48,7 +48,7 @@ def create_network(k):
     c_fastest = calc_cap_from_cutoff(cutoff)
     dt = c_fastest / 10
 
-    retina = lowpass_filter(net, cutoff, name='Retina')
+    retina = add_lowpass_filter(net, cutoff, name='Retina')
 
     net.add_input('Retina')
 

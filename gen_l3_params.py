@@ -4,7 +4,8 @@ type = 'lowpass'
 name = 'L3'
 params = {'cutoff': cutoff_fastest,
           'invert': True,
-          'initialValue': activity_range}
+          'initialValue': activity_range,
+          'bias': 0.0}
 
 data = {'name': name,
         'type': type,

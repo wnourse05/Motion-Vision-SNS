@@ -6,8 +6,7 @@ import matplotlib
 from sns_toolbox.neurons import NonSpikingNeuron
 from sns_toolbox.connections import NonSpikingSynapse
 from sns_toolbox.networks import Network
-from sns_toolbox.renderer import render
-from utilities import add_lowpass_filter, bandpass_filter, synapse_target, activity_range, reversal_ex, reversal_in, cutoff_fastest, dt, load_data, add_scaled_bandpass_filter
+from utilities import add_lowpass_filter, synapse_target, activity_range, reversal_ex, reversal_in, cutoff_fastest, dt, load_data, add_scaled_bandpass_filter
 
 """
 ########################################################################################################################
@@ -22,7 +21,7 @@ RETINA
 """
 
 params_node_retina = load_data('params_node_retina.p')
-add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='Retina', invert=params_node_retina['params']['invert'], initial_value=params_node_retina['params']['initialValue'])
+add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='Retina', invert=params_node_retina['params']['invert'], initial_value=params_node_retina['params']['initialValue'], bias=params_node_retina['params']['bias'])
 
 net.add_input('Retina')
 net.add_output('Retina', name='OutR')
@@ -48,7 +47,7 @@ params_node_l2 = load_data('params_node_l2.p')
 add_scaled_bandpass_filter(net, params_node_l2['params']['cutoffLow'], params_node_l2['params']['cutoffHigh'],
                            params_node_l2['params']['gain'], invert=params_node_l2['params']['invert'], name='L2')
 params_node_l3 = load_data('params_node_l3.p')
-l3 = add_lowpass_filter(net, cutoff=params_node_l3['params']['cutoff'], name='L3', invert=params_node_l3['params']['invert'], initial_value=params_node_l3['params']['initialValue'])
+l3 = add_lowpass_filter(net, cutoff=params_node_l3['params']['cutoff'], name='L3', invert=params_node_l3['params']['invert'], initial_value=params_node_l3['params']['initialValue'], bias=params_node_l3['params']['bias'])
 # l5 = lowpass_filter(net, cutoff=cutoff_fastest, name='L5', invert=False, bias=activity_range)
 
 net.add_connection(synapse_r_l1, 'Retina', 'L1_in')
@@ -69,12 +68,14 @@ reversal_l3_mi9 = reversal_ex
 g_l3_mi9 = activity_range/(reversal_l3_mi9 - activity_range)
 g_l1_mi1, reversal_l1_mi1 = synapse_target(0.0, activity_range)
 
-synapse_l1_mi1 = NonSpikingSynapse(max_conductance=g_l1_mi1, reversal_potential=reversal_l1_mi1, e_lo=0.0, e_hi=activity_range)
 synapse_l3_mi9 = NonSpikingSynapse(max_conductance=g_l3_mi9, reversal_potential=reversal_l3_mi9, e_lo=0.0, e_hi=activity_range)
 
+params_node_mi1 = load_data('params_node_mi1.p')
 mi1 = add_lowpass_filter(net, cutoff=cutoff_fastest, name='Mi1', invert=False, bias=activity_range)
 mi9 = add_lowpass_filter(net, cutoff=cutoff_fastest, name='Mi9', invert=False, initial_value=activity_range)
 
+params_conn_mi1 = load_data('params_conn_mi1.p')
+synapse_l1_mi1 = NonSpikingSynapse(max_conductance=0.5, reversal_potential=params_conn_mi1['reversal'], e_lo=0.0, e_hi=activity_range)
 net.add_connection(synapse_l1_mi1, 'L1_out', 'Mi1')
 net.add_connection(synapse_l3_mi9, 'L3', 'Mi9')
 

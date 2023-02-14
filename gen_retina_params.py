@@ -4,7 +4,8 @@ type = 'lowpass'
 name = 'Retina'
 params = {'cutoff': cutoff_fastest,
           'invert': False,
-          'initialValue': 0.0}
+          'initialValue': 0.0,
+          'bias': 0.0}
 
 data = {'name': name,
         'type': type,

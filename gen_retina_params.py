@@ -3,7 +3,8 @@ from utilities import save_data, cutoff_fastest
 type = 'lowpass'
 name = 'Retina'
 params = {'cutoff': cutoff_fastest,
-          'invert': False}
+          'invert': False,
+          'initialValue': 0.0}
 
 data = {'name': name,
         'type': type,

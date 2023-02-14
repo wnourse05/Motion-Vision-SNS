@@ -43,7 +43,7 @@ def error(k, target_peak, cutoff_low, cutoff_high):
     peak_error = (peak - target_peak) ** 2
     return peak_error
 
-def tune_l1(cutoff_low, cutoff_high):
+def tune_l2(cutoff_low, cutoff_high):
     f = lambda x : error(x, 0.0, cutoff_low, cutoff_high)
     res = minimize_scalar(f, bounds=(1.0,-reversal_in), method='bounded')
 
@@ -52,7 +52,7 @@ def tune_l1(cutoff_low, cutoff_high):
     print('Gain: ' + str(k_final))
 
     type = 'bandpass'
-    name = 'L1'
+    name = 'L2'
     params = {'cutoffLow': cutoff_low,
               'cutoffHigh': cutoff_high,
               'gain': k_final,
@@ -62,11 +62,11 @@ def tune_l1(cutoff_low, cutoff_high):
             'type': type,
             'params': params}
 
-    filename = 'params_node_l1.p'
+    filename = 'params_node_l2.p'
 
     save_data(data, filename)
 
-cutoff_low = cutoff_fastest/10
+cutoff_low = cutoff_fastest/5
 cutoff_high = cutoff_fastest
 
-tune_l1(cutoff_low, cutoff_high)
+tune_l2(cutoff_low, cutoff_high)

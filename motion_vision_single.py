@@ -22,7 +22,7 @@ RETINA
 """
 
 params_node_retina = load_data('params_node_retina.p')
-add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='Retina')
+add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='Retina', invert=params_node_retina['params']['invert'], initial_value=params_node_retina['params']['initialValue'])
 
 net.add_input('Retina')
 net.add_output('Retina', name='OutR')
@@ -44,8 +44,11 @@ synapse_r_l3 = NonSpikingSynapse(max_conductance=g_r_l3, reversal_potential=reve
 params_node_l1 = load_data('params_node_l1.p')
 add_scaled_bandpass_filter(net, params_node_l1['params']['cutoffLow'], params_node_l1['params']['cutoffHigh'],
                            params_node_l1['params']['gain'], invert=params_node_l1['params']['invert'], name='L1')
-l2 = bandpass_filter(net, cutoff_lower=cutoff_fastest/5, cutoff_higher=cutoff_fastest, name='L2', invert=True)
-l3 = add_lowpass_filter(net, cutoff=cutoff_fastest, name='L3', invert=True, initial_value=activity_range)
+params_node_l2 = load_data('params_node_l2.p')
+add_scaled_bandpass_filter(net, params_node_l2['params']['cutoffLow'], params_node_l2['params']['cutoffHigh'],
+                           params_node_l2['params']['gain'], invert=params_node_l2['params']['invert'], name='L2')
+params_node_l3 = load_data('params_node_l3.p')
+l3 = add_lowpass_filter(net, cutoff=params_node_l3['params']['cutoff'], name='L3', invert=params_node_l3['params']['invert'], initial_value=params_node_l3['params']['initialValue'])
 # l5 = lowpass_filter(net, cutoff=cutoff_fastest, name='L5', invert=False, bias=activity_range)
 
 net.add_connection(synapse_r_l1, 'Retina', 'L1_in')

@@ -30,15 +30,12 @@ net.add_output('Retina', name='OutR')
 ########################################################################################################################
 LAMINA
 """
-g_r_l1, reversal_r_l1 = synapse_target(0.0, activity_range)
-g_r_l2 = g_r_l1
-reversal_r_l2 = reversal_r_l1
-g_r_l3 = g_r_l1
-reversal_r_l3 = reversal_r_l1
-
-synapse_r_l1 = NonSpikingSynapse(max_conductance=g_r_l1, reversal_potential=reversal_r_l1, e_lo=0.0, e_hi=activity_range)
-synapse_r_l2 = NonSpikingSynapse(max_conductance=g_r_l2, reversal_potential=reversal_r_l2, e_lo=0.0, e_hi=activity_range)
-synapse_r_l3 = NonSpikingSynapse(max_conductance=g_r_l3, reversal_potential=reversal_r_l3, e_lo=0.0, e_hi=activity_range)
+params_conn_l1 = load_data('params_conn_l1.p')
+params_conn_l2 = load_data('params_conn_l2.p')
+params_conn_l3 = load_data('params_conn_l3.p')
+synapse_r_l1 = NonSpikingSynapse(max_conductance=params_conn_l1['g']['center'], reversal_potential=params_conn_l1['reversal']['center'], e_lo=0.0, e_hi=activity_range)
+synapse_r_l2 = NonSpikingSynapse(max_conductance=params_conn_l2['g']['center'], reversal_potential=params_conn_l2['reversal']['center'], e_lo=0.0, e_hi=activity_range)
+synapse_r_l3 = NonSpikingSynapse(max_conductance=params_conn_l3['g']['center'], reversal_potential=params_conn_l3['reversal']['center'], e_lo=0.0, e_hi=activity_range)
 
 params_node_l1 = load_data('params_node_l1.p')
 add_scaled_bandpass_filter(net, params_node_l1['params']['cutoffLow'], params_node_l1['params']['cutoffHigh'],
@@ -64,18 +61,15 @@ net.add_output('L3', name='OutL3')
 ########################################################################################################################
 MEDULLA ON
 """
-reversal_l3_mi9 = reversal_ex
-g_l3_mi9 = activity_range/(reversal_l3_mi9 - activity_range)
-g_l1_mi1, reversal_l1_mi1 = synapse_target(0.0, activity_range)
-
-synapse_l3_mi9 = NonSpikingSynapse(max_conductance=g_l3_mi9, reversal_potential=reversal_l3_mi9, e_lo=0.0, e_hi=activity_range)
-
 params_node_mi1 = load_data('params_node_mi1.p')
+params_node_mi9 = load_data('params_node_mi9.p')
 mi1 = add_lowpass_filter(net, cutoff=params_node_mi1['params']['cutoff'], name='Mi1', invert=params_node_mi1['params']['invert'], bias=params_node_mi1['params']['bias'], initial_value=params_node_mi1['params']['initialValue'])
-mi9 = add_lowpass_filter(net, cutoff=cutoff_fastest, name='Mi9', invert=False, initial_value=activity_range)
+mi9 = add_lowpass_filter(net, cutoff=params_node_mi9['params']['cutoff'], name='Mi9', invert=params_node_mi9['params']['invert'], bias=params_node_mi9['params']['bias'], initial_value=params_node_mi9['params']['initialValue'])
 
 params_conn_mi1 = load_data('params_conn_mi1.p')
+params_conn_mi9 = load_data('params_conn_mi9.p')
 synapse_l1_mi1 = NonSpikingSynapse(max_conductance=params_conn_mi1['g'], reversal_potential=params_conn_mi1['reversal'], e_lo=0.0, e_hi=activity_range)
+synapse_l3_mi9 = NonSpikingSynapse(max_conductance=params_conn_mi9['g'], reversal_potential=params_conn_mi9['reversal'], e_lo=0.0, e_hi=activity_range)
 net.add_connection(synapse_l1_mi1, 'L1_out', 'Mi1')
 net.add_connection(synapse_l3_mi9, 'L3', 'Mi9')
 
@@ -86,17 +80,15 @@ net.add_output('Mi9', name='OutMi9')
 ########################################################################################################################
 MEDULLA OFF
 """
-reversal_l3_tm9 = reversal_ex
-g_l3_tm9 = activity_range/(reversal_l3_mi9 - activity_range)
-
 params_conn_tm1 = load_data('params_conn_tm1.p')
+params_conn_tm9 = load_data('params_conn_tm9.p')
 synapse_l2_tm1 = NonSpikingSynapse(max_conductance=params_conn_tm1['g'], reversal_potential=params_conn_tm1['reversal'], e_lo=0.0, e_hi=activity_range)
-synapse_l3_tm9 = NonSpikingSynapse(max_conductance=g_l3_tm9, reversal_potential=reversal_l3_tm9, e_lo=0.0, e_hi=activity_range)
+synapse_l3_tm9 = NonSpikingSynapse(max_conductance=params_conn_tm9['g'], reversal_potential=params_conn_tm9['reversal'], e_lo=0.0, e_hi=activity_range)
 
 params_node_tm1 = load_data('params_node_tm1.p')
+params_node_tm9 = load_data('params_node_tm9.p')
 tm1 = add_lowpass_filter(net, cutoff=params_node_tm1['params']['cutoff'], name='Tm1', invert=params_node_tm1['params']['invert'], bias=params_node_tm1['params']['bias'], initial_value=params_node_tm1['params']['initialValue'])
-tm9 = add_lowpass_filter(net, cutoff=cutoff_fastest, name='Tm9', invert=False, initial_value=activity_range)
-
+tm9 = add_lowpass_filter(net, cutoff=params_node_tm9['params']['cutoff'], name='Tm9', invert=params_node_tm9['params']['invert'], bias=params_node_tm9['params']['bias'], initial_value=params_node_tm9['params']['initialValue'])
 net.add_connection(synapse_l2_tm1, 'L2_out', 'Tm1')
 net.add_connection(synapse_l3_mi9, 'L3', 'Tm9')
 

@@ -44,5 +44,5 @@ data_l3_field = {'conductance': field_l3_conductance,
                    'reversal': field_l3_reversal,
                    'target': field_l3_target}
 
-save_data(data_l1l2_field, 'params_conn_retina_l1_l2.p')
-save_data(data_l3_field, 'params_conn_retina_l3.p')
+save_data(data_l1l2_field, '../params_conn_retina_l1_l2.p')
+save_data(data_l3_field, '../params_conn_retina_l3.p')

@@ -10,11 +10,11 @@ from scipy.optimize import minimize_scalar
 def create_net(bias, cutoff):
     net = Network()
 
-    params_node_retina = load_data('params_node_retina.p')
+    params_node_retina = load_data('../params_node_retina.p')
     add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='Retina')
     net.add_input('Retina')
 
-    params_node_l1 = load_data('params_node_l1.p')
+    params_node_l1 = load_data('../params_node_l1.p')
     add_scaled_bandpass_filter(net, params_node_l1['params']['cutoffLow'], params_node_l1['params']['cutoffHigh'],
                                params_node_l1['params']['gain'], invert=params_node_l1['params']['invert'], name='L1')
 
@@ -74,14 +74,14 @@ def tune_mi1(cutoff):
             'type': type,
             'params': params}
 
-    filename = 'params_node_mi1.p'
+    filename = '../params_node_mi1.p'
 
     save_data(data, filename)
 
     conn_params = {'source': 'L1',
                    'g': -bias_final/reversal_in,
                    'reversal': reversal_in}
-    conn_filename = 'params_conn_mi1.p'
+    conn_filename = '../params_conn_mi1.p'
 
     save_data(conn_params, conn_filename)
 

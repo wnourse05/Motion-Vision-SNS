@@ -10,11 +10,11 @@ from scipy.optimize import minimize_scalar
 def create_net(k, cutoff):
     net = Network()
 
-    params_node_retina = load_data('params_node_retina.p')
+    params_node_retina = load_data('../params_node_retina.p')
     add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='Retina')
     net.add_input('Retina')
 
-    params_node_l1 = load_data('params_node_l1.p')
+    params_node_l1 = load_data('../params_node_l1.p')
     add_scaled_bandpass_filter(net, params_node_l1['params']['cutoffLow'], params_node_l1['params']['cutoffHigh'],
                                params_node_l1['params']['gain'], invert=params_node_l1['params']['invert'], name='L1')
 
@@ -23,11 +23,11 @@ def create_net(k, cutoff):
                                      e_hi=activity_range)
     net.add_connection(synapse_r_l1, 'Retina', 'L1_in')
 
-    params_node_mi1 = load_data('params_node_mi1.p')
+    params_node_mi1 = load_data('../params_node_mi1.p')
     add_lowpass_filter(net, cutoff=params_node_mi1['params']['cutoff'], name='Mi1',
                              invert=params_node_mi1['params']['invert'], bias=params_node_mi1['params']['bias'],
                              initial_value=params_node_mi1['params']['initialValue'])
-    params_conn_mi1 = load_data('params_conn_mi1.p')
+    params_conn_mi1 = load_data('../params_conn_mi1.p')
     synapse_l1_mi1 = NonSpikingSynapse(max_conductance=params_conn_mi1['g'],
                                        reversal_potential=params_conn_mi1['reversal'], e_lo=0.0, e_hi=activity_range)
     net.add_connection(synapse_l1_mi1, 'L1_out', 'Mi1')
@@ -83,14 +83,14 @@ def tune_ct1_on(cutoff):
             'type': type,
             'params': params}
 
-    filename = 'params_node_ct1_on.p'
+    filename = '../params_node_ct1_on.p'
 
     save_data(data, filename)
 
     conn_params = {'source': 'Mi1',
                    'g': k_final*activity_range / (reversal_ex - k_final*activity_range),
                    'reversal': reversal_ex}
-    conn_filename = 'params_conn_ct1_on.p'
+    conn_filename = '../params_conn_ct1_on.p'
 
     save_data(conn_params, conn_filename)
 

@@ -10,7 +10,7 @@ from scipy.optimize import minimize_scalar
 def create_net(k, cutoff_low, cutoff_high):
     net = Network()
 
-    params_node_retina = load_data('params_node_retina.p')
+    params_node_retina = load_data('../params_node_retina.p')
     add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='Retina')
     net.add_input('Retina')
 
@@ -43,7 +43,7 @@ def error(k, target_peak, cutoff_low, cutoff_high):
     peak_error = (peak - target_peak) ** 2
     return peak_error
 
-def tune_l2(cutoff_low, cutoff_high):
+def tune_l1(cutoff_low, cutoff_high):
     f = lambda x : error(x, 0.0, cutoff_low, cutoff_high)
     res = minimize_scalar(f, bounds=(1.0,-reversal_in), method='bounded')
 
@@ -52,7 +52,7 @@ def tune_l2(cutoff_low, cutoff_high):
     print('Gain: ' + str(k_final))
 
     type = 'bandpass'
-    name = 'L2'
+    name = 'L1'
     params = {'cutoffLow': cutoff_low,
               'cutoffHigh': cutoff_high,
               'gain': k_final,
@@ -61,12 +61,29 @@ def tune_l2(cutoff_low, cutoff_high):
     data = {'name': name,
             'type': type,
             'params': params}
-
-    filename = 'params_node_l2.p'
-
+    filename = '../params_node_l1.p'
     save_data(data, filename)
 
-cutoff_low = cutoff_fastest/5
+    target_center = 0.0
+    target_middle = 7 / 8 * activity_range
+    target_outer = 1.0 * activity_range
+    outer_conductance, outer_reversal = synapse_target(target_outer, activity_range)
+    middle_conductance, middle_reversal = synapse_target(target_middle, activity_range)
+    center_conductance, center_reversal = synapse_target(target_center, activity_range)
+    g = {'outer': outer_conductance,
+         'middle': middle_conductance,
+         'center': center_conductance}
+    reversal = {'outer': outer_reversal,
+                'middle': middle_reversal,
+                'center': center_reversal}
+    conn_params = {'source': 'Retina',
+                   'g': g,
+                   'reversal': reversal}
+    conn_filename = '../params_conn_l1.p'
+
+    save_data(conn_params, conn_filename)
+
+cutoff_low = cutoff_fastest/10
 cutoff_high = cutoff_fastest
 
-tune_l2(cutoff_low, cutoff_high)
+tune_l1(cutoff_low, cutoff_high)

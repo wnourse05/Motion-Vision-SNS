@@ -14,26 +14,25 @@ def create_net(bias, cutoff):
     add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='Retina')
     net.add_input('Retina')
 
-    params_node_l1 = load_data('params_node_l1.p')
-    add_scaled_bandpass_filter(net, params_node_l1['params']['cutoffLow'], params_node_l1['params']['cutoffHigh'],
-                               params_node_l1['params']['gain'], invert=params_node_l1['params']['invert'], name='L1')
+    params_node_l2 = load_data('params_node_l2.p')
+    add_scaled_bandpass_filter(net, params_node_l2['params']['cutoffLow'], params_node_l2['params']['cutoffHigh'],
+                               params_node_l2['params']['gain'], invert=params_node_l2['params']['invert'], name='L2')
 
-    g_r_l1, reversal_r_l1 = synapse_target(0.0, activity_range)
-    synapse_r_l1 = NonSpikingSynapse(max_conductance=g_r_l1, reversal_potential=reversal_r_l1, e_lo=0.0,
+    g_r_l2, reversal_r_l2 = synapse_target(0.0, activity_range)
+    synapse_r_l2 = NonSpikingSynapse(max_conductance=g_r_l2, reversal_potential=reversal_r_l2, e_lo=0.0,
                                      e_hi=activity_range)
-    net.add_connection(synapse_r_l1, 'Retina', 'L1_in')
+    net.add_connection(synapse_r_l2, 'Retina', 'L2_in')
 
-    g_l1_mi1 = -bias/reversal_in
-    reversal_l1_mi1 = reversal_in
+    g_l2_tm1, reversal_l2_tm1 = synapse_target(activity_range, bias)
 
-    synapse_l1_mi1 = NonSpikingSynapse(max_conductance=g_l1_mi1, reversal_potential=reversal_l1_mi1, e_lo=0.0,
+    synapse_l2_tm1 = NonSpikingSynapse(max_conductance=g_l2_tm1, reversal_potential=reversal_l2_tm1, e_lo=0.0,
                                        e_hi=activity_range)
 
-    add_lowpass_filter(net, cutoff=cutoff, name='Mi1', invert=False, bias=bias, initial_value=0.0)
+    add_lowpass_filter(net, cutoff=cutoff, name='Tm1', invert=False, bias=bias, initial_value=activity_range)
 
-    net.add_connection(synapse_l1_mi1, 'L1_out', 'Mi1')
+    net.add_connection(synapse_l2_tm1, 'L2_out', 'Tm1')
 
-    net.add_output('Mi1')
+    net.add_output('Tm1')
 
     model = net.compile(dt, backend=backend, device='cpu')
     return model
@@ -48,44 +47,44 @@ def run_net(bias, cutoff):
         data[i] = model(inputs[i, :])
     plt.plot(t, data, label=str(bias))
 
-    return np.max(data)
+    return np.min(data)
 
 def error(bias, target_peak, cutoff):
     peak = run_net(bias, cutoff)
     peak_error = (peak - target_peak) ** 2
     return peak_error
 
-def tune_mi1(cutoff):
-    f = lambda x : error(x, 1.0, cutoff)
-    res = minimize_scalar(f, bounds=(0.0,2.0), method='bounded')
+def tune_tm1(cutoff):
+    f = lambda x : error(x, 0.0, cutoff)
+    res = minimize_scalar(f, bounds=(-1.0, 0.0), method='bounded')
 
     bias_final = res.x
     print('Squared Error: ' + str(res.fun))
     print('Bias: ' + str(bias_final) + ' nA')
 
     type = 'lowpass'
-    name = 'Mi1'
+    name = 'Tm1'
     params = {'cutoff': cutoff,
               'invert': False,
-              'initialValue': 0.0,
+              'initialValue': activity_range,
               'bias': bias_final}
 
     data = {'name': name,
             'type': type,
             'params': params}
 
-    filename = 'params_node_mi1.p'
+    filename = 'params_node_tm1.p'
 
     save_data(data, filename)
-
-    conn_params = {'source': 'L1',
-                   'g': -bias_final/reversal_in,
-                   'reversal': reversal_in}
-    conn_filename = 'params_conn_mi1.p'
+    g_l2_tm1, reversal_l2_tm1 = synapse_target(activity_range, bias_final)
+    conn_params = {'source': 'L2',
+                   'g': g_l2_tm1,
+                   'reversal': reversal_l2_tm1}
+    conn_filename = 'params_conn_tm1.p'
 
     save_data(conn_params, conn_filename)
 
 
 cutoff = cutoff_fastest
 
-tune_mi1(cutoff)
+tune_tm1(cutoff)

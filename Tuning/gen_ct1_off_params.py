@@ -53,7 +53,7 @@ def run_net(bias, cutoff):
 
     for i in range(len(t)):
         data[i] = model(inputs[i, :])
-    plt.plot(t, data, label=str(bias))
+    # plt.plot(t, data, label=str(bias))
 
     return np.min(data)
 

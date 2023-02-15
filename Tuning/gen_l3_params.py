@@ -1,4 +1,4 @@
-from utilities import save_data, cutoff_fastest, activity_range, synapse_target
+from utilities import save_data, activity_range, synapse_target
 
 def tune_l3(cutoff):
     type = 'lowpass'

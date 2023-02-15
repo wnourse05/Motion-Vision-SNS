@@ -1,4 +1,4 @@
-from utilities import save_data, cutoff_fastest
+from utilities import save_data
 
 def tune_retina(cutoff):
     type = 'lowpass'

@@ -52,7 +52,3 @@ def tune_neurons(cutoffs, debug=False):
     if debug:
         print('Tuning CT1 (Off)')
     tune_ct1_off(cutoff_ct1_off)
-
-#                   Retina          L1                                  L2                              L3                  Mi1         Mi9             Tm1             Tm9             CT1_On          CT1_Off
-cutoffs = np.array([cutoff_fastest, cutoff_fastest/10, cutoff_fastest, cutoff_fastest/5, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest])
-tune_neurons(cutoffs, debug=True)

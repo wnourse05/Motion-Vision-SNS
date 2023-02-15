@@ -3,7 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 from sns_toolbox.connections import NonSpikingSynapse
 from sns_toolbox.networks import Network
-from utilities import add_lowpass_filter, add_scaled_bandpass_filter, synapse_target, activity_range, reversal_in, cutoff_fastest, load_data, dt, backend, save_data
+from utilities import add_lowpass_filter, add_scaled_bandpass_filter, synapse_target, activity_range, reversal_in, load_data, dt, backend, save_data
 
 from scipy.optimize import minimize_scalar
 
@@ -46,7 +46,7 @@ def run_net(bias, cutoff):
 
     for i in range(len(t)):
         data[i] = model(inputs[i, :])
-    plt.plot(t, data, label=str(bias))
+    # plt.plot(t, data, label=str(bias))
 
     return np.max(data)
 

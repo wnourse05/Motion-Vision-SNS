@@ -1,4 +1,4 @@
-from utilities import save_data, cutoff_fastest, reversal_ex, activity_range
+from utilities import save_data, reversal_ex, activity_range
 
 def tune_mi9(cutoff):
     type = 'lowpass'

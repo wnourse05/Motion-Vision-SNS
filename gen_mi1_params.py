@@ -7,7 +7,7 @@ from utilities import add_lowpass_filter, add_scaled_bandpass_filter, synapse_ta
 
 from scipy.optimize import minimize_scalar
 
-def create_net(g, cutoff):
+def create_net(bias, cutoff):
     net = Network()
 
     params_node_retina = load_data('params_node_retina.p')
@@ -23,13 +23,13 @@ def create_net(g, cutoff):
                                      e_hi=activity_range)
     net.add_connection(synapse_r_l1, 'Retina', 'L1_in')
 
-    g_l1_mi1 = g
+    g_l1_mi1 = -bias/reversal_in
     reversal_l1_mi1 = reversal_in
 
     synapse_l1_mi1 = NonSpikingSynapse(max_conductance=g_l1_mi1, reversal_potential=reversal_l1_mi1, e_lo=0.0,
                                        e_hi=activity_range)
 
-    add_lowpass_filter(net, cutoff=cutoff, name='Mi1', invert=False, bias=activity_range)
+    add_lowpass_filter(net, cutoff=cutoff, name='Mi1', invert=False, bias=bias, initial_value=0.0)
 
     net.add_connection(synapse_l1_mi1, 'L1_out', 'Mi1')
 
@@ -38,37 +38,37 @@ def create_net(g, cutoff):
     model = net.compile(dt, backend=backend, device='cpu')
     return model
 
-def run_net(g, cutoff):
-    model = create_net(g, cutoff)
+def run_net(bias, cutoff):
+    model = create_net(bias, cutoff)
     t = np.arange(0, 50, dt)
     inputs = torch.ones([len(t), 1])
     data = np.zeros_like(t)
 
     for i in range(len(t)):
         data[i] = model(inputs[i, :])
-    plt.plot(t, data, label=str(g))
+    plt.plot(t, data, label=str(bias))
 
     return np.max(data)
 
-def error(g, target_peak, cutoff):
-    peak = run_net(g, cutoff)
+def error(bias, target_peak, cutoff):
+    peak = run_net(bias, cutoff)
     peak_error = (peak - target_peak) ** 2
     return peak_error
 
 def tune_mi1(cutoff):
     f = lambda x : error(x, 1.0, cutoff)
-    res = minimize_scalar(f, bounds=(0.5,2.0), method='bounded')
+    res = minimize_scalar(f, bounds=(0.0,2.0), method='bounded')
 
-    g_final = res.x
+    bias_final = res.x
     print('Squared Error: ' + str(res.fun))
-    print('Conductance: ' + str(g_final) + ' uS')
+    print('Bias: ' + str(bias_final) + ' nA')
 
     type = 'lowpass'
     name = 'Mi1'
     params = {'cutoff': cutoff,
               'invert': True,
               'initialValue': 0.0,
-              'bias': activity_range}
+              'bias': bias_final}
 
     data = {'name': name,
             'type': type,
@@ -79,7 +79,7 @@ def tune_mi1(cutoff):
     save_data(data, filename)
 
     conn_params = {'source': 'L1',
-                   'g': g_final,
+                   'g': -bias_final/reversal_in,
                    'reversal': reversal_in}
     conn_filename = 'params_conn_mi1.p'
 

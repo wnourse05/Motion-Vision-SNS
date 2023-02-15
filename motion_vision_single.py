@@ -107,15 +107,16 @@ net.add_output('Tm9', name='OutTm9')
 ########################################################################################################################
 CT1 COMPARTMENTS
 """
-reversal_mi1_ct1on = reversal_ex
-g_mi1_ct1on = activity_range/(reversal_mi1_ct1on - activity_range)
+
 reversal_tm1_ct1off = reversal_ex
 g_tm1_ct1off = activity_range/(reversal_tm1_ct1off - activity_range)
 
-synapse_mi1_ct1on = NonSpikingSynapse(max_conductance=g_mi1_ct1on, reversal_potential=reversal_mi1_ct1on, e_lo=0.0, e_hi=activity_range)
+params_conn_ct1_on = load_data('params_conn_ct1_on.p')
+synapse_mi1_ct1on = NonSpikingSynapse(max_conductance=params_conn_ct1_on['g'], reversal_potential=params_conn_ct1_on['reversal'], e_lo=0.0, e_hi=activity_range)
 synapse_tm1_ct1off = NonSpikingSynapse(max_conductance=g_tm1_ct1off, reversal_potential=reversal_tm1_ct1off, e_lo=0.0, e_hi=activity_range)
 
-ct1_on = add_lowpass_filter(net, cutoff=cutoff_fastest, name='CT1_On', invert=False)
+params_node_ct1_on = load_data('params_node_ct1_on.p')
+ct1_on = add_lowpass_filter(net, cutoff=params_node_ct1_on['params']['cutoff'], name='CT1_On', invert=params_node_ct1_on['params']['invert'], bias=params_node_ct1_on['params']['bias'], initial_value=params_node_ct1_on['params']['initialValue'])
 ct1_off = add_lowpass_filter(net, cutoff=cutoff_fastest, name='CT1_Off', invert=False, initial_value=activity_range)
 
 net.add_connection(synapse_mi1_ct1on, 'Mi1', 'CT1_On')

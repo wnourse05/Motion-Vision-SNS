@@ -21,5 +21,3 @@ def tune_mi9(cutoff):
     conn_filename = '../params_conn_mi9.p'
 
     save_data(conn_params, conn_filename)
-
-tune_mi9(cutoff_fastest)

@@ -3,10 +3,9 @@ import torch
 import matplotlib.pyplot as plt
 import matplotlib
 
-from sns_toolbox.neurons import NonSpikingNeuron
 from sns_toolbox.connections import NonSpikingSynapse
 from sns_toolbox.networks import Network
-from utilities import add_lowpass_filter, synapse_target, activity_range, reversal_ex, reversal_in, cutoff_fastest, dt, load_data, add_scaled_bandpass_filter
+from utilities import add_lowpass_filter, activity_range, dt, load_data, add_scaled_bandpass_filter
 
 """
 ########################################################################################################################

@@ -93,8 +93,3 @@ def tune_ct1_on(cutoff):
     conn_filename = '../params_conn_ct1_on.p'
 
     save_data(conn_params, conn_filename)
-
-
-cutoff = cutoff_fastest
-
-tune_ct1_on(cutoff)

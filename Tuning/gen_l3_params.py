@@ -33,5 +33,3 @@ def tune_l3(cutoff):
     conn_filename = '../params_conn_l3.p'
 
     save_data(conn_params, conn_filename)
-
-tune_l3(cutoff_fastest)

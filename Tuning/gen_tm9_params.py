@@ -21,5 +21,3 @@ def tune_tm9(cutoff):
     conn_filename = '../params_conn_tm9.p'
 
     save_data(conn_params, conn_filename)
-
-tune_tm9(cutoff_fastest)

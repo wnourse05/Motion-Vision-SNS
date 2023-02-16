@@ -46,7 +46,7 @@ def gen_single_column(cutoffs):
     add_scaled_bandpass_filter(net, params_node_l2['params']['cutoffLow'], params_node_l2['params']['cutoffHigh'],
                                params_node_l2['params']['gain'], invert=params_node_l2['params']['invert'], name='L2')
     params_node_l3 = load_data('params_node_l3.p')
-    l3 = add_lowpass_filter(net, cutoff=params_node_l3['params']['cutoff'], name='L3', invert=params_node_l3['params']['invert'], initial_value=params_node_l3['params']['initialValue'], bias=params_node_l3['params']['bias'])
+    add_lowpass_filter(net, cutoff=params_node_l3['params']['cutoff'], name='L3', invert=params_node_l3['params']['invert'], initial_value=params_node_l3['params']['initialValue'], bias=params_node_l3['params']['bias'])
     # l5 = lowpass_filter(net, cutoff=cutoff_fastest, name='L5', invert=False, bias=activity_range)
 
     net.add_connection(synapse_r_l1, 'Retina', 'L1_in')
@@ -65,8 +65,8 @@ def gen_single_column(cutoffs):
     """
     params_node_mi1 = load_data('params_node_mi1.p')
     params_node_mi9 = load_data('params_node_mi9.p')
-    mi1 = add_lowpass_filter(net, cutoff=params_node_mi1['params']['cutoff'], name='Mi1', invert=params_node_mi1['params']['invert'], bias=params_node_mi1['params']['bias'], initial_value=params_node_mi1['params']['initialValue'])
-    mi9 = add_lowpass_filter(net, cutoff=params_node_mi9['params']['cutoff'], name='Mi9', invert=params_node_mi9['params']['invert'], bias=params_node_mi9['params']['bias'], initial_value=params_node_mi9['params']['initialValue'])
+    add_lowpass_filter(net, cutoff=params_node_mi1['params']['cutoff'], name='Mi1', invert=params_node_mi1['params']['invert'], bias=params_node_mi1['params']['bias'], initial_value=params_node_mi1['params']['initialValue'])
+    add_lowpass_filter(net, cutoff=params_node_mi9['params']['cutoff'], name='Mi9', invert=params_node_mi9['params']['invert'], bias=params_node_mi9['params']['bias'], initial_value=params_node_mi9['params']['initialValue'])
 
     params_conn_mi1 = load_data('params_conn_mi1.p')
     params_conn_mi9 = load_data('params_conn_mi9.p')
@@ -89,8 +89,8 @@ def gen_single_column(cutoffs):
 
     params_node_tm1 = load_data('params_node_tm1.p')
     params_node_tm9 = load_data('params_node_tm9.p')
-    tm1 = add_lowpass_filter(net, cutoff=params_node_tm1['params']['cutoff'], name='Tm1', invert=params_node_tm1['params']['invert'], bias=params_node_tm1['params']['bias'], initial_value=params_node_tm1['params']['initialValue'])
-    tm9 = add_lowpass_filter(net, cutoff=params_node_tm9['params']['cutoff'], name='Tm9', invert=params_node_tm9['params']['invert'], bias=params_node_tm9['params']['bias'], initial_value=params_node_tm9['params']['initialValue'])
+    add_lowpass_filter(net, cutoff=params_node_tm1['params']['cutoff'], name='Tm1', invert=params_node_tm1['params']['invert'], bias=params_node_tm1['params']['bias'], initial_value=params_node_tm1['params']['initialValue'])
+    add_lowpass_filter(net, cutoff=params_node_tm9['params']['cutoff'], name='Tm9', invert=params_node_tm9['params']['invert'], bias=params_node_tm9['params']['bias'], initial_value=params_node_tm9['params']['initialValue'])
     net.add_connection(synapse_l2_tm1, 'L2_out', 'Tm1')
     net.add_connection(synapse_l3_tm9, 'L3', 'Tm9')
 
@@ -108,8 +108,8 @@ def gen_single_column(cutoffs):
 
     params_node_ct1_on = load_data('params_node_ct1_on.p')
     params_node_ct1_off = load_data('params_node_ct1_off.p')
-    ct1_on = add_lowpass_filter(net, cutoff=params_node_ct1_on['params']['cutoff'], name='CT1_On', invert=params_node_ct1_on['params']['invert'], bias=params_node_ct1_on['params']['bias'], initial_value=params_node_ct1_on['params']['initialValue'])
-    ct1_off = add_lowpass_filter(net, cutoff=params_node_ct1_off['params']['cutoff'], name='CT1_Off', invert=params_node_ct1_off['params']['invert'], bias=params_node_ct1_off['params']['bias'], initial_value=params_node_ct1_off['params']['initialValue'])
+    add_lowpass_filter(net, cutoff=params_node_ct1_on['params']['cutoff'], name='CT1_On', invert=params_node_ct1_on['params']['invert'], bias=params_node_ct1_on['params']['bias'], initial_value=params_node_ct1_on['params']['initialValue'])
+    add_lowpass_filter(net, cutoff=params_node_ct1_off['params']['cutoff'], name='CT1_Off', invert=params_node_ct1_off['params']['invert'], bias=params_node_ct1_off['params']['bias'], initial_value=params_node_ct1_off['params']['initialValue'])
 
     net.add_connection(synapse_mi1_ct1on, 'Mi1', 'CT1_On')
     net.add_connection(synapse_tm1_ct1off, 'Tm1', 'CT1_Off')

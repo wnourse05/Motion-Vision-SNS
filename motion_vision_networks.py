@@ -92,7 +92,7 @@ def gen_single_column(cutoffs):
     tm1 = add_lowpass_filter(net, cutoff=params_node_tm1['params']['cutoff'], name='Tm1', invert=params_node_tm1['params']['invert'], bias=params_node_tm1['params']['bias'], initial_value=params_node_tm1['params']['initialValue'])
     tm9 = add_lowpass_filter(net, cutoff=params_node_tm9['params']['cutoff'], name='Tm9', invert=params_node_tm9['params']['invert'], bias=params_node_tm9['params']['bias'], initial_value=params_node_tm9['params']['initialValue'])
     net.add_connection(synapse_l2_tm1, 'L2_out', 'Tm1')
-    net.add_connection(synapse_l3_mi9, 'L3', 'Tm9')
+    net.add_connection(synapse_l3_tm9, 'L3', 'Tm9')
 
     net.add_output('Tm1', name='OutTm1')
     net.add_output('Tm9', name='OutTm9')

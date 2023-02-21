@@ -9,7 +9,7 @@ from motion_vision_networks import gen_single_column
 #                   Retina          L1                                  L2                              L3                  Mi1         Mi9             Tm1             Tm9             CT1_On          CT1_Off
 cutoffs = np.array([cutoff_fastest, cutoff_fastest/10, cutoff_fastest, cutoff_fastest/5, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest])
 
-model, net = gen_single_column(cutoffs)
+model, net = gen_single_column()
 
 t = np.arange(0,50, dt)
 inputs = torch.ones([len(t), net.get_num_inputs()])

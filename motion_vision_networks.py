@@ -6,7 +6,7 @@ import matplotlib
 from sns_toolbox.connections import NonSpikingSynapse, NonSpikingPatternConnection
 from sns_toolbox.networks import Network
 from sns_toolbox.renderer import render
-from utilities import add_lowpass_filter, activity_range, dt, load_data, add_scaled_bandpass_filter, backend, NonSpikingOneToOneConnection
+from utilities import add_lowpass_filter, activity_range, dt, load_data, add_scaled_bandpass_filter, backend, NonSpikingOneToOneConnection, synapse_target
 from Tuning.tune_neurons import tune_neurons
 
 def __gen_receptive_fields__(params):
@@ -211,9 +211,9 @@ def gen_test_emd(shape, cutoffs=None):
     net.add_connection(synapse_r_l2, 'Retina', 'L2_in')
     net.add_connection(synapse_r_l3, 'Retina', 'L3')
 
-    net.add_output('L1_out', name='OutL1')
-    net.add_output('L2_out', name='OutL2')
-    net.add_output('L3', name='OutL3')
+    # net.add_output('L1_out', name='OutL1')
+    # net.add_output('L2_out', name='OutL2')
+    # net.add_output('L3', name='OutL3')
 
     """
     ####################################################################################################################
@@ -239,8 +239,8 @@ def gen_test_emd(shape, cutoffs=None):
     net.add_connection(synapse_l1_mi1, 'L1_out', 'Mi1')
     net.add_connection(synapse_l3_mi9, 'L3', 'Mi9')
 
-    net.add_output('Mi1', name='OutMi1')
-    net.add_output('Mi9', name='OutMi9')
+    # net.add_output('Mi1', name='OutMi1')
+    # net.add_output('Mi9', name='OutMi9')
 
     """
     ####################################################################################################################
@@ -266,8 +266,8 @@ def gen_test_emd(shape, cutoffs=None):
     net.add_connection(synapse_l2_tm1, 'L2_out', 'Tm1')
     net.add_connection(synapse_l3_tm9, 'L3', 'Tm9')
 
-    net.add_output('Tm1', name='OutTm1')
-    net.add_output('Tm9', name='OutTm9')
+    # net.add_output('Tm1', name='OutTm1')
+    # net.add_output('Tm9', name='OutTm9')
 
     """
     ####################################################################################################################
@@ -294,14 +294,56 @@ def gen_test_emd(shape, cutoffs=None):
     net.add_connection(synapse_mi1_ct1on, 'Mi1', 'CT1_On')
     net.add_connection(synapse_tm1_ct1off, 'Tm1', 'CT1_Off')
 
-    net.add_output('CT1_On', name='OutCT1On')
-    net.add_output('CT1_Off', name='OutCT1Off')
+    # net.add_output('CT1_On', name='OutCT1On')
+    # net.add_output('CT1_Off', name='OutCT1Off')
+
+    """
+    ####################################################################################################################
+    T4 CELLS
+    """
+    cond_mi1, rev_mi1 = synapse_target(activity_range, 0.0)
+    cond_mi9, rev_mi9 = synapse_target(0.0, activity_range)
+    cond_ct1, rev_ct1 = synapse_target(0.0, activity_range)
+
+    cond_mi9_kernel = np.array([[0, 0, 0],
+                                [cond_mi9, 0, 0],
+                                [0, 0, 0]])
+    rev_mi9_kernel = np.array([[0, 0, 0],
+                               [rev_mi9, 0, 0],
+                               [0, 0, 0]])
+    cond_ct1_kernel = np.array([[0, 0, 0],
+                                [0, 0, cond_ct1],
+                                [0, 0, 0]])
+    rev_ct1_kernel = np.array([[0, 0, 0],
+                               [0, 0, rev_ct1],
+                               [0, 0, 0]])
+    e_lo_kernel = np.zeros([3,3])
+    e_hi_kernel = np.zeros([3,3]) + activity_range
+
+    synapse_mi1_t4 = NonSpikingOneToOneConnection(shape=shape, max_conductance=cond_mi1, reversal_potential=rev_mi1,
+                                                  e_lo=0.0, e_hi=activity_range)
+    synapse_mi9_t4_bf = NonSpikingPatternConnection(max_conductance_kernel=cond_mi9_kernel,
+                                                    reversal_potential_kernel=rev_mi9_kernel, e_lo_kernel=e_lo_kernel,
+                                                    e_hi_kernel=e_hi_kernel)
+    synapse_ct1on_t4_bf = NonSpikingPatternConnection(max_conductance_kernel=cond_ct1_kernel,
+                                                      reversal_potential_kernel=rev_ct1_kernel, e_lo_kernel=e_lo_kernel,
+                                                      e_hi_kernel=e_hi_kernel)
+    add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='T4_bf',
+                       invert=params_node_retina['params']['invert'],
+                       initial_value=params_node_retina['params']['initialValue'],
+                       bias=params_node_retina['params']['bias'], shape=shape, color='purple')
+
+    net.add_connection(synapse_mi1_t4, 'Mi1', 'T4_bf')
+    net.add_connection(synapse_mi9_t4_bf, 'Mi9', 'T4_bf')
+    net.add_connection(synapse_ct1on_t4_bf, 'CT1_On', 'T4_bf')
+
+    net.add_output('T4_bf')
 
     """
     ####################################################################################################################
     EXPORT
     """
-    render(net, view=True)
+    # render(net, view=True)
     model = net.compile(dt, backend=backend)
 
     return model, net

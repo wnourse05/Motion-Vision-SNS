@@ -12,6 +12,7 @@ activity_range = 1.0
 reversal_ex = 5.0
 reversal_in = -2.0
 backend = 'torch'
+device = 'cuda'
 cutoff_fastest = 200   # Hz
 
 def save_data(data, filename):
@@ -127,6 +128,24 @@ def add_scaled_bandpass_filter(net: Network, cutoff_lower, cutoff_higher, k, inv
     net.add_connection(synapse_fast, name+'_in', name+'_slow')
     net.add_connection(synapse_bd, name+'_fast', name+'_out')
     net.add_connection(synapse_slow, name+'_slow', name+'_out')
+
+class Stimulus:
+    def __init__(self, stimulus_array, interval):
+        self.stimulus_array = stimulus_array
+        self.interval = interval
+        self.index = 0
+        self.interval_ctr = -1
+        self.num_rows = np.shape(stimulus_array)[0]
+
+    def get_stimulus(self):
+        self.interval_ctr += 1
+        if self.interval_ctr >= self.interval:
+            self.interval_ctr = 0
+            self.index += 1
+            if self.index >= self.num_rows:
+                self.index = 0
+
+        return self.stimulus_array[self.index, :]
 
 c_fastest = calc_cap_from_cutoff(cutoff_fastest)
 dt = c_fastest/10

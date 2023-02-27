@@ -156,7 +156,7 @@ def gen_single_column(cutoffs=None):
 
     return model, net
 
-def gen_test_emd(shape, cutoffs=None):
+def gen_test_emd(shape, cutoffs=None, output_retina=False, output_t4a=True, output_t4b=False, output_t4c=False, output_t4d=False):
     """
     ####################################################################################################################
     GATHER PROPERTIES
@@ -183,7 +183,8 @@ def gen_test_emd(shape, cutoffs=None):
                        bias=params_node_retina['params']['bias'], shape=shape, color='black')
 
     net.add_input('Retina', size=flat_size)
-    net.add_output('Retina', name='OutR')
+    if output_retina:
+        net.add_output('Retina', name='OutR')
 
     """
     ####################################################################################################################
@@ -391,10 +392,14 @@ def gen_test_emd(shape, cutoffs=None):
     net.add_connection(synapse_mi9_t4_d, 'Mi9', 'T4_d')
     net.add_connection(synapse_ct1on_t4_d, 'CT1_On', 'T4_d')
 
-    net.add_output('T4_a')
-    net.add_output('T4_b')
-    net.add_output('T4_c')
-    net.add_output('T4_d')
+    if output_t4a:
+        net.add_output('T4_a')
+    if output_t4b:
+        net.add_output('T4_b')
+    if output_t4c:
+        net.add_output('T4_c')
+    if output_t4d:
+        net.add_output('T4_d')
 
     """
     ####################################################################################################################

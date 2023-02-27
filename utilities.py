@@ -1,7 +1,9 @@
 import pickle
 import numpy as np
+import torch
 from typing import Any
 import numbers
+import matplotlib.pyplot as plt
 
 from sns_toolbox.neurons import NonSpikingNeuron
 from sns_toolbox.connections import NonSpikingSynapse, NonSpikingMatrixConnection
@@ -149,3 +151,62 @@ class Stimulus:
 
 c_fastest = calc_cap_from_cutoff(cutoff_fastest)
 dt = c_fastest/10
+
+def gen_gratings(shape, freq, dir, num_cycles):
+    # Get the number of samples
+    period = 1/freq
+    num_samples = int(num_cycles*period/(dt/1000))
+    num_samples_period = int(period/(dt/1000))
+
+    # Generate the reference wave
+    # x = torch.linspace(0, num_cycles*2*np.pi, num_samples, device=device)
+    # y = torch.sin(x)/2+0.5
+    x = torch.zeros(num_samples_period, device=device)
+    x[:int(num_samples_period/2)] = 1.0
+    y = torch.zeros(num_samples_period, device=device)
+    y[:] = x
+    for i in range(num_cycles):
+        y = torch.hstack((y,x))
+    if dir == 'a':
+        start_at_end = False
+        up_down = False
+    elif dir == 'b':
+        start_at_end = True
+        up_down = False
+    elif dir == 'c':
+        start_at_end = False
+        up_down = True
+    elif dir == 'd':
+        start_at_end = True
+        up_down = True
+    else:
+        raise ValueError('Invalid direction, must be a b c or d')
+
+    # Construct the matrices
+    num_rows = shape[0]
+    num_cols = shape[1]
+    if up_down:
+        window_length = num_rows
+    else:
+        window_length = num_cols
+    matrix = torch.zeros(shape, device=device)
+    stimulus = torch.zeros(num_cols*num_rows, device=device)
+
+    # Fill the matrices
+    for i in range(num_samples-window_length+1):
+        window = y[i:i+window_length]
+        if up_down:
+            for col in range(num_cols):
+                matrix[:,col] = window
+        else:
+            for row in range(num_rows):
+                matrix[row,:] = window
+        if i == 0:
+            stimulus = torch.flatten(matrix)
+        else:
+            if start_at_end:
+                stimulus = torch.vstack((torch.flatten(matrix), stimulus))
+            else:
+                stimulus = torch.vstack((stimulus, torch.flatten(matrix)))
+
+    return stimulus, y

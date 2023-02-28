@@ -46,35 +46,54 @@ def test_emd(model, net, freq, num_cycles, invert=False):
 
     return a_peak, b_peak, ratio
 
-def freq_response_emd(model, net, freqs, num_cycles, title, invert=False):
+def freq_response_emd(gains_left, gains_center, gains_right, freqs, num_cycles, t4=True):
+    if t4:
+        invert = False
+        title = 'T4'
+    else:
+        invert = True
+        title = 'T5'
+    num_gains = len(gains_left)
     num_freqs = len(freqs)
     a_peaks = np.zeros_like(freqs)
     b_peaks = np.zeros_like(freqs)
     ratios = np.zeros_like(freqs)
+    for g in range(num_gains):
+        print('Gain %i/%i'%(g+1, num_gains))
+        if t4:
+            model, net = gen_test_emd((7,7), k_mi1=gains_center[g], k_mi9=gains_left[g], k_ct1on=gains_right[g], output_t4a=True, output_t4b=True)
+        else:
+            model, net = gen_test_emd((7, 7), k_tm1=gains_center[g], k_tm9=gains_left[g], k_ct1off=gains_right[g],
+                                      output_t5a=True, output_t5b=True)
+        for i in range(num_freqs):
+            print('     Sample %i/%i: %f Hz'%(i+1, num_freqs, freqs[i]))
+            a_peaks[i], b_peaks[i], ratios[i] = test_emd(model, net, freqs[i], num_cycles, invert=invert)
 
-    for i in range(num_freqs):
-        print('Sample %i/%i: %f Hz'%(i+1, num_freqs, freqs[i]))
-        a_peaks[i], b_peaks[i], ratios[i] = test_emd(model, net, freqs[i], num_cycles, invert=invert)
-
-    plt.figure()
+        plt.subplot(2,1,1)
+        plt.plot(freqs, a_peaks, label=str(gains_left[g]), color='C'+str(g))
+        plt.plot(freqs, b_peaks, linestyle='--', color='C'+str(g))
+        plt.title('A Frequency Response')
+        plt.ylabel('Steady Peak')
+        plt.xlabel('Frequency (Hz)')
+        plt.subplot(2,1,2)
+        plt.plot(freqs, ratios, label=str(gains_left[g]))
+        plt.title(title+'_a/'+ title+ '_b')
+        plt.ylabel('Magnitude')
+        plt.xlabel('Frequency (Hz)')
     plt.subplot(2,1,1)
-    plt.plot(freqs, a_peaks, label=title+'_a')
-    plt.plot(freqs, b_peaks, label=title + '_b')
-    plt.title('Frequency Response')
     plt.legend()
-    plt.ylabel('Steady Peak')
-    plt.xlabel('Frequency (Hz)')
     plt.subplot(2,1,2)
-    plt.plot(freqs, ratios)
-    plt.title(title+'_a/'+ title+ '_b')
-    plt.ylabel('Magnitude')
-    plt.xlabel('Frequency (Hz)')
+    plt.legend()
+    plt.suptitle(title)
 
 model_t4, net_t4 = gen_test_emd((7,7), output_t4a=True, output_t4b=True)
 model_t5, net_t5 = gen_test_emd((7,7), output_t5a=True, output_t5b=True)
 
-freqs = np.linspace(1,1000, num=50)
-# freq_response_emd(model_t4, net_t4, freqs, 10, 'T4')
-freq_response_emd(model_t5, net_t5, freqs, 10, 'T5', invert=True)
+freqs = np.linspace(10,500, num=10)
+gains = np.linspace(0.01,0.5,num=5)
+plt.figure()
+freq_response_emd(gains, gains, gains, freqs, 10, t4=True)
+plt.figure()
+freq_response_emd(gains, gains, gains, freqs, 10, t4=False)
 
 plt.show()

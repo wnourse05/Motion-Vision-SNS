@@ -84,7 +84,7 @@ def test_emd_all_neurons(model, net, stim):
     plt.plot(t, t4_a_single, label='EMD')
     plt.plot(t, left_single, label='Left')
     plt.plot(t, center_single, label='Center')
-    plt.plot(t, right_single, label='T4d')
+    plt.plot(t, right_single, label='Right')
     plt.legend()
 
 def test_all_emd(model, net, freq, num_cycles, neuron):
@@ -138,21 +138,21 @@ model_t5_all, net_t5_all = gen_test_emd((7,7), output_tm1=True, output_tm9=True,
 # plt.plot(stim_d.to('cpu').numpy()[:,0], label='d', color='C3')
 # plt.legend()
 
-# test_all_emd(model_t4, net_t4, 50, 10, 'T4')
-# test_all_emd(model_t4, net_t4, 100, 10, 'T4')
-# test_all_emd(model_t4, net_t4, 150, 10, 'T4')
-#
+test_all_emd(model_t4, net_t4, 50, 10, 'T4')
+test_all_emd(model_t4, net_t4, 100, 10, 'T4')
+test_all_emd(model_t4, net_t4, 150, 10, 'T4')
+
 test_all_emd(model_t5, net_t5, 50, 10, 'T5')
-# test_all_emd(model_t5, net_t5, 100, 10, 'T5')
-# test_all_emd(model_t5, net_t5, 150, 10, 'T5')
+test_all_emd(model_t5, net_t5, 100, 10, 'T5')
+test_all_emd(model_t5, net_t5, 150, 10, 'T5')
 
 shape = [7,7]
 freq = 100    # Hz
 stim_a, y_a = gen_gratings(shape, freq, 'a', 10)
 
-# plt.figure()
-# plt.title('T4')
-# test_emd_all_neurons(model_t4_all, net_t4_all, stim_a)
+plt.figure()
+plt.title('T4')
+test_emd_all_neurons(model_t4_all, net_t4_all, stim_a)
 plt.figure()
 plt.title('T5')
 test_emd_all_neurons(model_t5_all, net_t5_all, stim_a)

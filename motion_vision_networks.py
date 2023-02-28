@@ -6,7 +6,7 @@ import matplotlib
 from sns_toolbox.connections import NonSpikingSynapse, NonSpikingPatternConnection
 from sns_toolbox.networks import Network
 from sns_toolbox.renderer import render
-from utilities import add_lowpass_filter, activity_range, dt, load_data, add_scaled_bandpass_filter, backend, NonSpikingOneToOneConnection, synapse_target, device, cutoff_fastest
+from utilities import add_lowpass_filter, activity_range, dt, load_data, add_scaled_bandpass_filter, backend, NonSpikingOneToOneConnection, synapse_target, device, cutoff_fastest, reversal_ex, reversal_in
 from Tuning.tune_neurons import tune_neurons
 
 def __gen_receptive_fields__(params):
@@ -37,6 +37,15 @@ def __all_quadrants__(matrix):
     a = np.rot90(matrix, 2)
     d = np.rot90(matrix, 3)
     return a, c, d
+
+def __transmission_params__(k, excite=True):
+    if excite:
+        rev = reversal_ex
+        cond = k*activity_range/(rev-k*activity_range)
+    else:
+        rev = reversal_in
+        cond = -k*activity_range/(rev+k*activity_range)
+    return cond, rev
 
 def gen_single_column(cutoffs=None):
     """
@@ -156,7 +165,8 @@ def gen_single_column(cutoffs=None):
 
     return model, net
 
-def gen_test_emd(shape, cutoffs=None, output_retina=False, output_mi1=False, output_mi9=False, output_tm1=False, output_tm9=False, output_ct1on=False, output_ct1off=False, output_t4a=False, output_t4b=False, output_t4c=False, output_t4d=False, output_t5a=False, output_t5b=False, output_t5c=False, output_t5d=False):
+def gen_test_emd(shape, k_mi1=1.0, k_mi9=1.0, k_ct1on=1.0, k_tm1=1.0, k_tm9=1.0, k_ct1off=1.0, cutoffs=None,
+                 output_retina=False, output_mi1=False, output_mi9=False, output_tm1=False, output_tm9=False, output_ct1on=False, output_ct1off=False, output_t4a=False, output_t4b=False, output_t4c=False, output_t4d=False, output_t5a=False, output_t5b=False, output_t5c=False, output_t5d=False):
     """
     ####################################################################################################################
     GATHER PROPERTIES
@@ -314,9 +324,9 @@ def gen_test_emd(shape, cutoffs=None, output_retina=False, output_mi1=False, out
     ####################################################################################################################
     T4 CELLS
     """
-    cond_mi1, rev_mi1 = synapse_target(activity_range, 0.0)
-    cond_mi9, rev_mi9 = synapse_target(0.0, activity_range)
-    cond_ct1_on, rev_ct1_on = synapse_target(0.0, activity_range)
+    cond_mi1, rev_mi1 = __transmission_params__(k_mi1, excite=True)
+    cond_mi9, rev_mi9 = __transmission_params__(k_mi9, excite=False)
+    cond_ct1_on, rev_ct1_on = __transmission_params__(k_ct1on, excite=False)
 
     cond_mi9_kernel_b = np.array([[0, 0, 0],
                                 [cond_mi9, 0, 0],
@@ -411,9 +421,9 @@ def gen_test_emd(shape, cutoffs=None, output_retina=False, output_mi1=False, out
     ####################################################################################################################
     T5 CELLS
     """
-    cond_tm9, rev_tm9 = synapse_target(activity_range, 0.0)
-    cond_tm1, rev_tm1 = synapse_target(activity_range, 0.0)
-    cond_ct1_off, rev_ct1_off = synapse_target(0.0, activity_range)
+    cond_tm9, rev_tm9 = __transmission_params__(k_tm9, excite=True)
+    cond_tm1, rev_tm1 = __transmission_params__(k_tm1, excite=True)
+    cond_ct1_off, rev_ct1_off = __transmission_params__(k_ct1off, excite=False)
 
     cond_tm9_kernel_b = np.array([[0, 0, 0],
                                   [cond_tm9, 0, 0],

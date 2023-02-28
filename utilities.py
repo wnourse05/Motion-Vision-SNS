@@ -152,19 +152,22 @@ class Stimulus:
 c_fastest = calc_cap_from_cutoff(cutoff_fastest)
 dt = c_fastest/10
 
-def gen_gratings(shape, freq, dir, num_cycles):
+def gen_gratings(shape, freq, dir, num_cycles, square=False):
     # Get the number of samples
     period = 1/freq
     num_samples = int(num_cycles*period/(dt/1000))
     num_samples_period = int(period/(dt/1000))
 
     # Generate the reference wave
-    # x = torch.linspace(0, num_cycles*2*np.pi, num_samples, device=device)
-    # y = torch.sin(x)/2+0.5
-    x = torch.zeros(num_samples_period, device=device)
-    x[:int(num_samples_period/2)] = 1.0
-    y = torch.zeros(num_samples_period, device=device)
-    y[:] = x
+    if square:
+        x = torch.zeros(num_samples_period, device=device)
+        x[:int(num_samples_period / 2)] = 1.0
+        y = torch.zeros(num_samples_period, device=device)
+        y[:] = x
+    else:
+        x = torch.linspace(0, num_cycles*2*np.pi, num_samples, device=device)
+        y = torch.sin(x)/2+0.5
+
     for i in range(num_cycles):
         y = torch.hstack((y,x))
     if dir == 'a':

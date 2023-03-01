@@ -1,11 +1,9 @@
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-import matplotlib
 
-from utilities import dt, cutoff_fastest, Stimulus, device, gen_gratings
+from utilities import cutoff_fastest, device, gen_gratings
 from motion_vision_networks import gen_test_emd
-from sns_toolbox.renderer import render
 
 #                   Retina          L1                                  L2                              L3                  Mi1         Mi9             Tm1             Tm9             CT1_On          CT1_Off
 cutoffs = np.array([cutoff_fastest, cutoff_fastest/10, cutoff_fastest, cutoff_fastest/5, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest])
@@ -18,7 +16,6 @@ def test_emd(model, net, freq, num_cycles, invert=False):
     shape = [7, 7]
     stim, y_a = gen_gratings(shape, freq, 'a', num_cycles)
 
-    # stim = Stimulus(stimulus, interval)
     num_samples = np.shape(stim)[0]
 
     data = torch.zeros([num_samples, net.get_num_outputs_actual()], device=device)

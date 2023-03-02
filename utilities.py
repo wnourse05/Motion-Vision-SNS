@@ -4,6 +4,7 @@ import torch
 from typing import Any
 import numbers
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 from sns_toolbox.neurons import NonSpikingNeuron
 from sns_toolbox.connections import NonSpikingSynapse, NonSpikingMatrixConnection
@@ -131,28 +132,10 @@ def add_scaled_bandpass_filter(net: Network, cutoff_lower, cutoff_higher, k, inv
     net.add_connection(synapse_bd, name+'_fast', name+'_out')
     net.add_connection(synapse_slow, name+'_slow', name+'_out')
 
-class Stimulus:
-    def __init__(self, stimulus_array, interval):
-        self.stimulus_array = stimulus_array
-        self.interval = interval
-        self.index = 0
-        self.interval_ctr = -1
-        self.num_rows = np.shape(stimulus_array)[0]
-
-    def get_stimulus(self):
-        self.interval_ctr += 1
-        if self.interval_ctr >= self.interval:
-            self.interval_ctr = 0
-            self.index += 1
-            if self.index >= self.num_rows:
-                self.index = 0
-
-        return self.stimulus_array[self.index, :]
-
 c_fastest = calc_cap_from_cutoff(cutoff_fastest)
 dt = c_fastest/10
 
-def gen_gratings(shape, freq, dir, num_cycles, square=False):
+def gen_gratings(shape, freq, dir, num_cycles, dt, square=False, device='cpu'):
     # Get the number of samples
     period = 1/freq
     num_samples = int(num_cycles*period/(dt/1000))
@@ -160,16 +143,16 @@ def gen_gratings(shape, freq, dir, num_cycles, square=False):
 
     # Generate the reference wave
     if square:
-        x = torch.zeros(num_samples_period, device=device)
+        x = np.zeros(num_samples_period)
         x[:int(num_samples_period / 2)] = 1.0
-        y = torch.zeros(num_samples_period, device=device)
+        y = np.zeros(num_samples_period)
         y[:] = x
     else:
-        x = torch.linspace(0, num_cycles*2*np.pi, num_samples, device=device)
-        y = torch.sin(x)/2+0.5
+        x = np.linspace(0, num_cycles*2*np.pi, num_samples)
+        y = np.sin(x)/2+0.5
 
     for i in range(num_cycles):
-        y = torch.hstack((y,x))
+        y = np.hstack((y,x))
     if dir == 'a':
         start_at_end = False
         up_down = False
@@ -192,11 +175,12 @@ def gen_gratings(shape, freq, dir, num_cycles, square=False):
         window_length = num_rows
     else:
         window_length = num_cols
-    matrix = torch.zeros(shape, device=device)
-    stimulus = torch.zeros(num_cols*num_rows, device=device)
+    matrix = np.zeros(shape)
+    stimulus = np.zeros(num_cols*num_rows)
 
     # Fill the matrices
-    for i in range(num_samples-window_length+1):
+    for i in tqdm(range(num_samples-window_length+1)):
+        # print('     %i/%i'%(i+1,num_samples-window_length+1))
         window = y[i:i+window_length]
         if up_down:
             for col in range(num_cols):
@@ -205,11 +189,11 @@ def gen_gratings(shape, freq, dir, num_cycles, square=False):
             for row in range(num_rows):
                 matrix[row,:] = window
         if i == 0:
-            stimulus = torch.flatten(matrix)
+            stimulus = matrix.flatten()
         else:
             if start_at_end:
-                stimulus = torch.vstack((torch.flatten(matrix), stimulus))
+                stimulus = np.vstack((matrix.flatten(), stimulus))
             else:
-                stimulus = torch.vstack((stimulus, torch.flatten(matrix)))
+                stimulus = np.vstack((stimulus, matrix.flatten()))
 
     return stimulus, y

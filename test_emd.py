@@ -3,12 +3,14 @@ import torch
 import matplotlib.pyplot as plt
 import matplotlib
 
-from utilities import dt, cutoff_fastest, Stimulus, device, gen_gratings
+from utilities import cutoff_fastest, device, gen_gratings, calc_cap_from_cutoff
 from motion_vision_networks import gen_test_emd
 from sns_toolbox.renderer import render
 
 #                   Retina          L1                                  L2                              L3                  Mi1         Mi9             Tm1             Tm9             CT1_On          CT1_Off
 cutoffs = np.array([cutoff_fastest, cutoff_fastest/10, cutoff_fastest, cutoff_fastest/5, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest])
+c_fastest = calc_cap_from_cutoff(np.max(cutoffs))
+dt = c_fastest/5
 
 def test_emd(model, net, stimulus, y):
     model.reset()
@@ -90,10 +92,10 @@ def test_emd_all_neurons(model, net, stim):
 def test_all_emd(model, net, freq, num_cycles, neuron):
     print('Frequency: ' + str(freq) + ' Hz')
     shape = [7, 7]
-    stim_a, y_a = gen_gratings(shape, freq, 'a', num_cycles)
-    stim_b, y_b = gen_gratings(shape, freq, 'b', num_cycles)
-    stim_c, y_c = gen_gratings(shape, freq, 'c', num_cycles)
-    stim_d, y_d = gen_gratings(shape, freq, 'd', num_cycles)
+    stim_a, y_a = gen_gratings(shape, freq, 'a', num_cycles, dt)
+    stim_b, y_b = gen_gratings(shape, freq, 'b', num_cycles, dt)
+    stim_c, y_c = gen_gratings(shape, freq, 'c', num_cycles, dt)
+    stim_d, y_d = gen_gratings(shape, freq, 'd', num_cycles, dt)
 
     plt.figure()
     plt.subplot(2,2,1)
@@ -111,18 +113,18 @@ def test_all_emd(model, net, freq, num_cycles, neuron):
     plt.suptitle(neuron + ': ' + str(freq)+' Hz')
 
 
-model_t4, net_t4 = gen_test_emd((7,7), output_retina=True, output_t4a=True, output_t4b=True, output_t4c=True, output_t4d=True)
-model_t5, net_t5 = gen_test_emd((7,7), output_retina=True, output_t5a=True, output_t5b=True, output_t5c=True, output_t5d=True)
+model_t4, net_t4 = gen_test_emd(dt, (7,7), output_retina=True, output_t4a=True, output_t4b=True, output_t4c=True, output_t4d=True)
+model_t5, net_t5 = gen_test_emd(dt, (7,7), output_retina=True, output_t5a=True, output_t5b=True, output_t5c=True, output_t5d=True)
 
-model_t4_all, net_t4_all = gen_test_emd((7,7), output_mi1=True, output_mi9=True, output_ct1on=True, output_t4a=True)
-model_t5_all, net_t5_all = gen_test_emd((7,7), output_tm1=True, output_tm9=True, output_ct1off=True, output_t5a=True)
+model_t4_all, net_t4_all = gen_test_emd(dt, (7,7), output_mi1=True, output_mi9=True, output_ct1on=True, output_t4a=True)
+model_t5_all, net_t5_all = gen_test_emd(dt, (7,7), output_tm1=True, output_tm9=True, output_ct1off=True, output_t5a=True)
 
 # shape = [7,7]
 # freq = 100    # Hz
-# stim_a, y_a = gen_gratings(shape, freq, 'a', 10)
-# stim_b, y_b = gen_gratings(shape, freq, 'b', 10)
-# stim_c, y_c = gen_gratings(shape, freq, 'c', 10)
-# stim_d, y_d = gen_gratings(shape, freq, 'd', 10)
+# stim_a, y_a = gen_gratings(shape, freq, 'a', 10, dt)
+# stim_b, y_b = gen_gratings(shape, freq, 'b', 10, dt)
+# stim_c, y_c = gen_gratings(shape, freq, 'c', 10, dt)
+# stim_d, y_d = gen_gratings(shape, freq, 'd', 10, dt)
 # # stim_a = torch.vstack((on_rl, on_rl, on_rl, on_rl, on_rl))
 # # stim_b = torch.vstack((on_lr, on_lr, on_lr, on_lr, on_lr))
 #
@@ -148,7 +150,7 @@ test_all_emd(model_t5, net_t5, 150, 10, 'T5')
 
 shape = [7,7]
 freq = 100    # Hz
-stim_a, y_a = gen_gratings(shape, freq, 'a', 10)
+stim_a, y_a = gen_gratings(shape, freq, 'a', 10, dt)
 
 plt.figure()
 plt.title('T4')

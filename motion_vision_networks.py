@@ -6,7 +6,7 @@ import matplotlib
 from sns_toolbox.connections import NonSpikingSynapse, NonSpikingPatternConnection
 from sns_toolbox.networks import Network
 from sns_toolbox.renderer import render
-from utilities import add_lowpass_filter, activity_range, dt, load_data, add_scaled_bandpass_filter, backend, NonSpikingOneToOneConnection, synapse_target, device, cutoff_fastest, reversal_ex, reversal_in
+from utilities import add_lowpass_filter, activity_range, load_data, add_scaled_bandpass_filter, backend, NonSpikingOneToOneConnection, synapse_target, device, cutoff_fastest, reversal_ex, reversal_in, calc_cap_from_cutoff
 from Tuning.tune_neurons import tune_neurons
 
 def __gen_receptive_fields__(params):
@@ -47,13 +47,13 @@ def __transmission_params__(k, excite=True):
         cond = -k*activity_range/(rev+k*activity_range)
     return cond, rev
 
-def gen_single_column(cutoffs=None):
+def gen_single_column(dt, cutoffs=None):
     """
     ####################################################################################################################
     NETWORK
     """
     if cutoffs is not None:
-        tune_neurons(cutoffs)
+        tune_neurons(cutoffs, 'all')
     net = Network('Motion Vision Single Column')
 
     """
@@ -165,7 +165,7 @@ def gen_single_column(cutoffs=None):
 
     return model, net
 
-def gen_test_emd(shape, k_mi1=0.5, k_mi9=0.5, k_ct1on=0.5, k_tm1=0.5, k_tm9=0.5, k_ct1off=0.5, k_t4=0.1, k_t5=0.1,
+def gen_test_emd(dt, shape, k_mi1=0.5, k_mi9=0.5, k_ct1on=0.5, k_tm1=0.5, k_tm9=0.5, k_ct1off=0.5, k_t4=0.1, k_t5=0.1,
                  cutoffs=None, output_retina=False, output_mi1=False, output_mi9=False, output_tm1=False,
                  output_tm9=False, output_ct1on=False, output_ct1off=False, output_t4a=False, output_t4b=False,
                  output_t4c=False, output_t4d=False, output_t5a=False, output_t5b=False, output_t5c=False,
@@ -175,7 +175,7 @@ def gen_test_emd(shape, k_mi1=0.5, k_mi9=0.5, k_ct1on=0.5, k_tm1=0.5, k_tm9=0.5,
     GATHER PROPERTIES
     """
     if cutoffs is not None:
-        tune_neurons(cutoffs)
+        tune_neurons(cutoffs, 'all')
 
     """
     ####################################################################################################################
@@ -557,7 +557,7 @@ def gen_test_emd(shape, k_mi1=0.5, k_mi9=0.5, k_ct1on=0.5, k_tm1=0.5, k_tm9=0.5,
 
     return model, net
 
-def gen_emd_on_mcmc(params):
+def gen_emd_on_mcmc(params, dt, device):
     """
     ####################################################################################################################
     GATHER PROPERTIES
@@ -732,6 +732,6 @@ def gen_emd_on_mcmc(params):
     EXPORT
     """
     # render(net, view=True)
-    model = net.compile(dt, backend=backend, device=device)
+    model = net.compile(dt, backend='numpy', device=device)
 
     return model, net

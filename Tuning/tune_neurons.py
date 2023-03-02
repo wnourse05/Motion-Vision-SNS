@@ -18,37 +18,56 @@ def debug_print(line, debug):
     if debug:
         print(line)
         return line
-def tune_neurons(cutoffs, debug=False):
-    cutoff_retina, cutoff_l1_low, cutoff_l1_high, cutoff_l2_low, cutoff_l2_high, cutoff_l3, cutoff_mi1, cutoff_mi9,\
-        cutoff_tm1, cutoff_tm9, cutoff_ct1_on, cutoff_ct1_off = cutoffs
+def tune_neurons(cutoffs, mode, debug=False):
+    if mode == 'on':
+        cutoff_retina, cutoff_l1_low, cutoff_l1_high, cutoff_l3, cutoff_mi1, cutoff_mi9, cutoff_ct1_on = cutoffs
+    elif mode == 'off':
+        cutoff_retina, cutoff_l2_low, cutoff_l2_high, cutoff_l3, cutoff_tm1, cutoff_tm9, cutoff_ct1_off = cutoffs
+    else:
+        cutoff_retina, cutoff_l1_low, cutoff_l1_high, cutoff_l2_low, cutoff_l2_high, cutoff_l3, cutoff_mi1, cutoff_mi9,\
+            cutoff_tm1, cutoff_tm9, cutoff_ct1_on, cutoff_ct1_off = cutoffs
 
     if debug:
         print('Tuning Retina')
-    tune_retina(cutoff_retina)
-    if debug:
-        print('Tuning L1')
-    tune_l1(cutoff_l1_low, cutoff_l1_high)
-    if debug:
-        print('Tuning L2')
-    tune_l2(cutoff_l2_low, cutoff_l2_high)
+    retina = tune_retina(cutoff_retina)
     if debug:
         print('Tuning L3')
-    tune_l3(cutoff_l3)
-    if debug:
-        print('Tuning Mi1')
-    tune_mi1(cutoff_mi1)
-    if debug:
-        print('Tuning Mi9')
-    tune_mi9(cutoff_mi9)
-    if debug:
-        print('Tuning Tm1')
-    tune_tm1(cutoff_tm1)
-    if debug:
-        print('Tuning Tm9')
-    tune_tm9(cutoff_tm9)
-    if debug:
-        print('Tuning CT1 (On)')
-    tune_ct1_on(cutoff_ct1_on)
-    if debug:
-        print('Tuning CT1 (Off)')
-    tune_ct1_off(cutoff_ct1_off)
+    l3, l3_conn = tune_l3(cutoff_l3)
+    data = {'Retina': retina,
+            'L3': l3, 'L3Conn': l3_conn}
+    if mode == 'on' or mode != 'off':
+        if debug:
+            print('Tuning L1')
+        l1, l1_conn = tune_l1(cutoff_l1_low, cutoff_l1_high)
+        if debug:
+            print('Tuning Mi1')
+        mi1, mi1_conn = tune_mi1(cutoff_mi1)
+        if debug:
+            print('Tuning Mi9')
+        mi9, mi9_conn = tune_mi9(cutoff_mi9)
+        if debug:
+            print('Tuning CT1 (On)')
+        ct1_on, ct1_on_conn = tune_ct1_on(cutoff_ct1_on)
+        data.update({'L1': l1, 'L1Conn': l1_conn,
+                     'Mi1': mi1, 'Mi1Conn': mi1_conn,
+                     'Mi9': mi9, 'Mi9Conn': mi9_conn,
+                     'CT1On': ct1_on, 'CT1OnConn': ct1_on_conn,})
+    if mode == 'off' or mode != 'on':
+        if debug:
+            print('Tuning L2')
+        l2, l2_conn = tune_l2(cutoff_l2_low, cutoff_l2_high)
+        if debug:
+            print('Tuning Tm1')
+        tm1, tm1_conn = tune_tm1(cutoff_tm1)
+        if debug:
+            print('Tuning Tm9')
+        tm9, tm9_conn = tune_tm9(cutoff_tm9)
+        if debug:
+            print('Tuning CT1 (Off)')
+        ct1_off, ct1_off_conn = tune_ct1_off(cutoff_ct1_off)
+        data.update({'L2': l2, 'L2Conn': l2_conn,
+                     'Tm1': tm1, 'Tm1Conn': tm1_conn,
+                     'Tm9': tm9, 'Tm9Conn': tm9_conn,
+                     'CT1Off': ct1_off, 'CT1OffConn': ct1_off_conn, })
+
+    return data

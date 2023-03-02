@@ -83,3 +83,5 @@ def tune_tm1(cutoff):
     conn_filename = '../params_conn_tm1.p'
 
     save_data(conn_params, conn_filename)
+
+    return data, conn_params

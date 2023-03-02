@@ -82,3 +82,5 @@ def tune_l1(cutoff_low, cutoff_high):
     conn_filename = '../params_conn_l1.p'
 
     save_data(conn_params, conn_filename)
+
+    return data, conn_params

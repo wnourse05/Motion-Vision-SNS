@@ -84,3 +84,5 @@ def tune_mi1(cutoff):
     conn_filename = '../params_conn_mi1.p'
 
     save_data(conn_params, conn_filename)
+
+    return data, conn_params

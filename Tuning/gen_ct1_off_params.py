@@ -91,3 +91,5 @@ def tune_ct1_off(cutoff):
     conn_filename = '../params_conn_ct1_off.p'
 
     save_data(conn_params, conn_filename)
+
+    return data, conn_params

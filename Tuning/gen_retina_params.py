@@ -15,3 +15,5 @@ def tune_retina(cutoff):
     filename = '../params_node_retina.p'
 
     save_data(data, filename)
+
+    return data

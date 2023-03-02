@@ -62,7 +62,7 @@ def error(bias, target_peak, cutoff):
     peak_error = (peak - target_peak) ** 2
     return peak_error
 
-def tune_ct1_off(cutoff):
+def tune_ct1_off(cutoff, save=True):
     f = lambda x : error(x, 0.0, cutoff)
     res = minimize_scalar(f, bounds=(-1.0, 0.0), method='bounded')
 
@@ -83,13 +83,15 @@ def tune_ct1_off(cutoff):
 
     filename = '../params_node_ct1_off.p'
 
-    save_data(data, filename)
+    if save:
+        save_data(data, filename)
     g, reversal = synapse_target(activity_range, bias_final)
     conn_params = {'source': 'L2',
                    'g': g,
                    'reversal': reversal}
     conn_filename = '../params_conn_ct1_off.p'
 
-    save_data(conn_params, conn_filename)
+    if save:
+        save_data(conn_params, conn_filename)
 
     return data, conn_params

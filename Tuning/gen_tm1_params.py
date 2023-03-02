@@ -54,7 +54,7 @@ def error(bias, target_peak, cutoff):
     peak_error = (peak - target_peak) ** 2
     return peak_error
 
-def tune_tm1(cutoff):
+def tune_tm1(cutoff, save=True):
     f = lambda x : error(x, 0.0, cutoff)
     res = minimize_scalar(f, bounds=(-1.0, 0.0), method='bounded')
 
@@ -74,14 +74,14 @@ def tune_tm1(cutoff):
             'params': params}
 
     filename = '../params_node_tm1.p'
-
-    save_data(data, filename)
+    if save:
+        save_data(data, filename)
     g_l2_tm1, reversal_l2_tm1 = synapse_target(activity_range, bias_final)
     conn_params = {'source': 'L2',
                    'g': g_l2_tm1,
                    'reversal': reversal_l2_tm1}
     conn_filename = '../params_conn_tm1.p'
-
-    save_data(conn_params, conn_filename)
+    if save:
+        save_data(conn_params, conn_filename)
 
     return data, conn_params

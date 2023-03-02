@@ -1,6 +1,6 @@
 from utilities import save_data
 
-def tune_retina(cutoff):
+def tune_retina(cutoff, save=True):
     type = 'lowpass'
     name = 'Retina'
     params = {'cutoff': cutoff,
@@ -13,7 +13,7 @@ def tune_retina(cutoff):
             'params': params}
 
     filename = '../params_node_retina.p'
-
-    save_data(data, filename)
+    if save:
+        save_data(data, filename)
 
     return data

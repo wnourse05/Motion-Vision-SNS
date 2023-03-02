@@ -1,6 +1,6 @@
 from utilities import save_data, reversal_ex, activity_range
 
-def tune_mi9(cutoff):
+def tune_mi9(cutoff, save=True):
     type = 'lowpass'
     name = 'Retina'
     params = {'cutoff': cutoff,
@@ -13,13 +13,14 @@ def tune_mi9(cutoff):
             'params': params}
 
     filename = '../params_node_mi9.p'
-    save_data(data, filename)
+    if save:
+        save_data(data, filename)
 
     conn_params = {'source': 'L3',
                    'g': activity_range / (reversal_ex - activity_range),
                    'reversal': reversal_ex}
     conn_filename = '../params_conn_mi9.p'
-
-    save_data(conn_params, conn_filename)
+    if save:
+        save_data(conn_params, conn_filename)
 
     return data, conn_params

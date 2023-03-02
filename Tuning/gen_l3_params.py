@@ -1,6 +1,6 @@
 from utilities import save_data, activity_range, synapse_target
 
-def tune_l3(cutoff):
+def tune_l3(cutoff, save=True):
     type = 'lowpass'
     name = 'L3'
     params = {'cutoff': cutoff,
@@ -13,7 +13,8 @@ def tune_l3(cutoff):
             'params': params}
 
     filename = '../params_node_l3.p'
-    save_data(data, filename)
+    if save:
+        save_data(data, filename)
 
     target_center = 0.0
     target_middle = 1.0 * activity_range
@@ -32,6 +33,7 @@ def tune_l3(cutoff):
                    'reversal': reversal}
     conn_filename = '../params_conn_l3.p'
 
-    save_data(conn_params, conn_filename)
+    if save:
+        save_data(conn_params, conn_filename)
 
     return data, conn_params

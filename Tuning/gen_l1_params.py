@@ -43,7 +43,7 @@ def error(k, target_peak, cutoff_low, cutoff_high):
     peak_error = (peak - target_peak) ** 2
     return peak_error
 
-def tune_l1(cutoff_low, cutoff_high):
+def tune_l1(cutoff_low, cutoff_high, save=True):
     f = lambda x : error(x, 0.0, cutoff_low, cutoff_high)
     res = minimize_scalar(f, bounds=(1.0,-reversal_in), method='bounded')
 
@@ -62,7 +62,8 @@ def tune_l1(cutoff_low, cutoff_high):
             'type': type,
             'params': params}
     filename = '../params_node_l1.p'
-    save_data(data, filename)
+    if save:
+        save_data(data, filename)
 
     target_center = 0.0
     target_middle = 7 / 8 * activity_range
@@ -81,6 +82,7 @@ def tune_l1(cutoff_low, cutoff_high):
                    'reversal': reversal}
     conn_filename = '../params_conn_l1.p'
 
-    save_data(conn_params, conn_filename)
+    if save:
+        save_data(conn_params, conn_filename)
 
     return data, conn_params

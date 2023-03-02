@@ -55,7 +55,7 @@ def error(bias, target_peak, cutoff):
     peak_error = (peak - target_peak) ** 2
     return peak_error
 
-def tune_mi1(cutoff):
+def tune_mi1(cutoff, save=True):
     f = lambda x : error(x, 1.0, cutoff)
     res = minimize_scalar(f, bounds=(0.0,2.0), method='bounded')
 
@@ -75,14 +75,14 @@ def tune_mi1(cutoff):
             'params': params}
 
     filename = '../params_node_mi1.p'
-
-    save_data(data, filename)
+    if save:
+        save_data(data, filename)
 
     conn_params = {'source': 'L1',
                    'g': -bias_final/reversal_in,
                    'reversal': reversal_in}
     conn_filename = '../params_conn_mi1.p'
-
-    save_data(conn_params, conn_filename)
+    if save:
+        save_data(conn_params, conn_filename)
 
     return data, conn_params

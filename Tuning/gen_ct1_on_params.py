@@ -69,8 +69,8 @@ def tune_ct1_on(cutoff, save=True):
     res = minimize_scalar(f, bounds=(1.0,2.0), method='bounded')
 
     k_final = res.x
-    print('Squared Error: ' + str(res.fun))
-    print('Gain: ' + str(k_final))
+    # print('Squared Error: ' + str(res.fun))
+    # print('Gain: ' + str(k_final))
 
     type = 'lowpass'
     name = 'Mi1'

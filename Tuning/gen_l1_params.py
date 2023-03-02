@@ -48,8 +48,8 @@ def tune_l1(cutoff_low, cutoff_high, save=True):
     res = minimize_scalar(f, bounds=(1.0,-reversal_in), method='bounded')
 
     k_final = res.x
-    print('Squared Error: ' + str(res.fun))
-    print('Gain: ' + str(k_final))
+    # print('Squared Error: ' + str(res.fun))
+    # print('Gain: ' + str(k_final))
 
     type = 'bandpass'
     name = 'L1'

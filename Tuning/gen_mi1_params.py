@@ -60,8 +60,8 @@ def tune_mi1(cutoff, save=True):
     res = minimize_scalar(f, bounds=(0.0,2.0), method='bounded')
 
     bias_final = res.x
-    print('Squared Error: ' + str(res.fun))
-    print('Bias: ' + str(bias_final) + ' nA')
+    # print('Squared Error: ' + str(res.fun))
+    # print('Bias: ' + str(bias_final) + ' nA')
 
     type = 'lowpass'
     name = 'Mi1'

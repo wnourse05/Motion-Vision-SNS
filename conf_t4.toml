@@ -1,0 +1,81 @@
+[model]
+iterations = 100
+chains = 16
+params_to_use = [0,1,2,3,4,5,6,7,8,9,10,11]
+dim_full = 12
+
+[[params]]
+name = "Retina Cutoff Freq"
+lower = 0.1  # 0.0
+upper = 300
+#0
+
+[[params]]
+name = "L1 Low Cutoff Freq"
+lower = 0.1  # 0.0
+upper = 300
+#1
+
+[[params]]
+name = "L1 High Cutoff Freq"
+lower = 0.1  # 0.0
+upper = 300
+#2
+
+[[params]]
+name = "L3 Cutoff Freq"
+lower = 0.1  # 0.0
+upper = 300
+#3
+
+[[params]]
+name = "Mi1 Cutoff Freq"
+lower = 0.1  # 0.0
+upper = 300
+#4
+
+[[params]]
+name = "Mi9 Cutoff Freq"
+lower = 0.1  # 0.0
+upper = 300
+#5
+
+[[params]]
+name = "CT1 On Cutoff Freq"
+lower = 0.1  # 0.0
+upper = 300
+#6
+
+[[params]]
+name = "T4 Cutoff Freq"
+lower = 0.1  # 0.0
+upper = 300
+#7
+
+[[params]]
+name = "Mi1 -> T4 Gain"
+lower = 0.01  # 0.0
+upper = 1.0
+#8
+
+[[params]]
+name = "Mi9 -> T4 Gain"
+lower = 0.01  # 0.0
+upper = 1.0
+#9
+
+[[params]]
+name = "CT1 On -> T4 Gain"
+lower = 0.01  # 0.0
+upper = 1.0
+#10
+
+[[params]]
+name = "T4 -> T4 Gain"
+lower = 0.01  # 0.0
+upper = 1.0
+#11
+
+[[hand_tuned_params]]
+parameter_array = [200.0, 20.0, 200.0, 200.0, 200.0, 200.0, 200.0, 200.0, 0.5, 0.5, 0.5, 0.1]
+# Good guess

@@ -143,16 +143,16 @@ def gen_gratings(shape, freq, dir, num_cycles, dt, square=False, device='cpu'):
 
     # Generate the reference wave
     if square:
-        x = np.zeros(num_samples_period)
+        x = torch.zeros(num_samples_period, device=device)
         x[:int(num_samples_period / 2)] = 1.0
-        y = np.zeros(num_samples_period)
+        y = torch.zeros(num_samples_period, device=device)
         y[:] = x
     else:
-        x = np.linspace(0, num_cycles*2*np.pi, num_samples)
-        y = np.sin(x)/2+0.5
+        x = torch.linspace(0, num_cycles*2*np.pi, num_samples, device=device)
+        y = torch.sin(x)/2+0.5
 
     for i in range(num_cycles):
-        y = np.hstack((y,x))
+        y = torch.hstack((y,x))
     if dir == 'a':
         start_at_end = False
         up_down = False
@@ -175,8 +175,8 @@ def gen_gratings(shape, freq, dir, num_cycles, dt, square=False, device='cpu'):
         window_length = num_rows
     else:
         window_length = num_cols
-    matrix = np.zeros(shape)
-    stimulus = np.zeros(num_cols*num_rows)
+    matrix = torch.zeros(shape, device=device)
+    stimulus = torch.zeros(num_cols*num_rows, device=device)
 
     # Fill the matrices
     for i in tqdm(range(num_samples-window_length+1)):
@@ -189,11 +189,11 @@ def gen_gratings(shape, freq, dir, num_cycles, dt, square=False, device='cpu'):
             for row in range(num_rows):
                 matrix[row,:] = window
         if i == 0:
-            stimulus = matrix.flatten()
+            stimulus = torch.flatten(matrix)
         else:
             if start_at_end:
-                stimulus = np.vstack((matrix.flatten(), stimulus))
+                stimulus = torch.vstack((torch.flatten(matrix), stimulus))
             else:
-                stimulus = np.vstack((stimulus, matrix.flatten()))
+                stimulus = torch.vstack((stimulus, torch.flatten(matrix)))
 
     return stimulus, y

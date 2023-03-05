@@ -732,6 +732,6 @@ def gen_emd_on_mcmc(params, dt, device):
     EXPORT
     """
     # render(net, view=True)
-    model = net.compile(dt, backend='numpy', device=device)
+    model = net.compile(dt, backend='torch', device=device)
 
     return model, net

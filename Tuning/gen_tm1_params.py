@@ -7,14 +7,12 @@ from utilities import add_lowpass_filter, add_scaled_bandpass_filter, synapse_ta
 
 from scipy.optimize import minimize_scalar
 
-def create_net(bias, cutoff):
+def create_net(bias, cutoff, params_node_retina, params_node_l2):
     net = Network()
 
-    params_node_retina = load_data('../params_node_retina.p')
     add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='Retina')
     net.add_input('Retina')
 
-    params_node_l2 = load_data('../params_node_l2.p')
     add_scaled_bandpass_filter(net, params_node_l2['params']['cutoffLow'], params_node_l2['params']['cutoffHigh'],
                                params_node_l2['params']['gain'], invert=params_node_l2['params']['invert'], name='L2')
 
@@ -37,8 +35,8 @@ def create_net(bias, cutoff):
     model = net.compile(dt, backend=backend, device='cpu')
     return model
 
-def run_net(bias, cutoff):
-    model = create_net(bias, cutoff)
+def run_net(bias, cutoff, params_node_retina, params_node_l2):
+    model = create_net(bias, cutoff, params_node_retina, params_node_l2)
     t = np.arange(0, 50, dt)
     inputs = torch.ones([len(t), 1])
     data = np.zeros_like(t)
@@ -49,13 +47,13 @@ def run_net(bias, cutoff):
 
     return np.min(data)
 
-def error(bias, target_peak, cutoff):
-    peak = run_net(bias, cutoff)
+def error(bias, target_peak, cutoff, params_node_retina, params_node_l2):
+    peak = run_net(bias, cutoff, params_node_retina, params_node_l2)
     peak_error = (peak - target_peak) ** 2
     return peak_error
 
-def tune_tm1(cutoff, save=True):
-    f = lambda x : error(x, 0.0, cutoff)
+def tune_tm1(cutoff, params_node_retina, params_node_l2, save=True):
+    f = lambda x : error(x, 0.0, cutoff, params_node_retina, params_node_l2)
     res = minimize_scalar(f, bounds=(-1.0, 0.0), method='bounded')
 
     bias_final = res.x

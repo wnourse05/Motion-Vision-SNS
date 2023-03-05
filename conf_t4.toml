@@ -1,6 +1,6 @@
 [model]
-iterations = 100
-chains = 16
+iterations = 2000
+chains = 10
 params_to_use = [0,1,2,3,4,5,6,7,8,9,10,11]
 dim_full = 12
 

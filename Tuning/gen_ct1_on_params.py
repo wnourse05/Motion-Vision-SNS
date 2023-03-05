@@ -7,14 +7,12 @@ from utilities import add_lowpass_filter, add_scaled_bandpass_filter, synapse_ta
 
 from scipy.optimize import minimize_scalar
 
-def create_net(k, cutoff):
+def create_net(k, cutoff, params_node_retina, params_node_l1, params_node_mi1, params_conn_mi1):
     net = Network()
 
-    params_node_retina = load_data('../params_node_retina.p')
     add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='Retina')
     net.add_input('Retina')
 
-    params_node_l1 = load_data('../params_node_l1.p')
     add_scaled_bandpass_filter(net, params_node_l1['params']['cutoffLow'], params_node_l1['params']['cutoffHigh'],
                                params_node_l1['params']['gain'], invert=params_node_l1['params']['invert'], name='L1')
 
@@ -23,11 +21,9 @@ def create_net(k, cutoff):
                                      e_hi=activity_range)
     net.add_connection(synapse_r_l1, 'Retina', 'L1_in')
 
-    params_node_mi1 = load_data('../params_node_mi1.p')
     add_lowpass_filter(net, cutoff=params_node_mi1['params']['cutoff'], name='Mi1',
                              invert=params_node_mi1['params']['invert'], bias=params_node_mi1['params']['bias'],
                              initial_value=params_node_mi1['params']['initialValue'])
-    params_conn_mi1 = load_data('../params_conn_mi1.p')
     synapse_l1_mi1 = NonSpikingSynapse(max_conductance=params_conn_mi1['g'],
                                        reversal_potential=params_conn_mi1['reversal'], e_lo=0.0, e_hi=activity_range)
     net.add_connection(synapse_l1_mi1, 'L1_out', 'Mi1')
@@ -47,8 +43,8 @@ def create_net(k, cutoff):
     model = net.compile(dt, backend=backend, device='cpu')
     return model
 
-def run_net(k, cutoff):
-    model = create_net(k, cutoff)
+def run_net(k, cutoff, params_node_retina, params_node_l1, params_node_mi1, params_conn_mi1):
+    model = create_net(k, cutoff, params_node_retina, params_node_l1, params_node_mi1, params_conn_mi1)
     t = np.arange(0, 50, dt)
     inputs = torch.ones([len(t), 1])
     data = np.zeros_like(t)
@@ -59,13 +55,13 @@ def run_net(k, cutoff):
 
     return np.max(data)
 
-def error(k, target_peak, cutoff):
-    peak = run_net(k, cutoff)
+def error(k, target_peak, cutoff, params_node_retina, params_node_l1, params_node_mi1, params_conn_mi1):
+    peak = run_net(k, cutoff, params_node_retina, params_node_l1, params_node_mi1, params_conn_mi1)
     peak_error = (peak - target_peak) ** 2
     return peak_error
 
-def tune_ct1_on(cutoff, save=True):
-    f = lambda x : error(x, 1.0, cutoff)
+def tune_ct1_on(cutoff, params_node_retina, params_node_l1, params_node_mi1, params_conn_mi1, save=True):
+    f = lambda x : error(x, 1.0, cutoff, params_node_retina, params_node_l1, params_node_mi1, params_conn_mi1)
     res = minimize_scalar(f, bounds=(1.0,2.0), method='bounded')
 
     k_final = res.x

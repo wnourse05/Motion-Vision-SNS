@@ -1,5 +1,6 @@
 from utilities import save_data, gen_gratings
 import numpy as np
+import torch
 freqs = np.array([5.0, 200.0])
 dt = 0.1
 print('Generating first stimulus')

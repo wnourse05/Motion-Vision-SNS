@@ -7,10 +7,9 @@ from utilities import add_lowpass_filter, add_scaled_bandpass_filter, synapse_ta
 
 from scipy.optimize import minimize_scalar
 
-def create_net(k, cutoff_low, cutoff_high):
+def create_net(k, cutoff_low, cutoff_high, params_node_retina):
     net = Network()
 
-    params_node_retina = load_data('../params_node_retina.p')
     add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='Retina')
     net.add_input('Retina')
 
@@ -26,8 +25,8 @@ def create_net(k, cutoff_low, cutoff_high):
     model = net.compile(dt, backend=backend, device='cpu')
     return model
 
-def run_net(k, cutoff_low, cutoff_high):
-    model = create_net(k, cutoff_low, cutoff_high)
+def run_net(k, cutoff_low, cutoff_high, params_retina):
+    model = create_net(k, cutoff_low, cutoff_high, params_retina)
     t = np.arange(0, 50, dt)
     inputs = torch.ones([len(t), 1])
     data = np.zeros_like(t)
@@ -38,13 +37,13 @@ def run_net(k, cutoff_low, cutoff_high):
 
     return np.min(data)
 
-def error(k, target_peak, cutoff_low, cutoff_high):
-    peak = run_net(k, cutoff_low, cutoff_high)
+def error(k, target_peak, cutoff_low, cutoff_high, params_retina):
+    peak = run_net(k, cutoff_low, cutoff_high, params_retina)
     peak_error = (peak - target_peak) ** 2
     return peak_error
 
-def tune_l1(cutoff_low, cutoff_high, save=True):
-    f = lambda x : error(x, 0.0, cutoff_low, cutoff_high)
+def tune_l1(cutoff_low, cutoff_high, params_retina, save=True):
+    f = lambda x : error(x, 0.0, cutoff_low, cutoff_high, params_retina)
     res = minimize_scalar(f, bounds=(1.0,-reversal_in), method='bounded')
 
     k_final = res.x

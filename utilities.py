@@ -1,4 +1,5 @@
 import pickle
+import blosc
 import numpy as np
 import torch
 from typing import Any
@@ -19,10 +20,16 @@ device = 'cuda'
 cutoff_fastest = 200   # Hz
 
 def save_data(data, filename):
-    pickle.dump(data, open(filename, 'wb'))
+    pickled = pickle.dumps(data)
+    compressed = blosc.compress(pickled)
+    with open(filename, 'wb') as f:
+        f.write(compressed)
 
 def load_data(filename):
-    data = pickle.load(open(filename, 'rb'))
+    with open(filename, 'rb') as f:
+        compressed = f.read()
+    decompressed = blosc.decompress(compressed)
+    data = pickle.loads(decompressed)
     return data
 
 def synapse_target(target, bias):
@@ -153,20 +160,20 @@ def gen_gratings(shape, freq, dir, num_cycles, dt, square=False, device='cpu'):
 
     for i in range(num_cycles):
         y = torch.hstack((y,x))
-    if dir == 'a':
+    if dir == 'rl':
         start_at_end = False
         up_down = False
-    elif dir == 'b':
+    elif dir == 'lr':
         start_at_end = True
         up_down = False
-    elif dir == 'c':
+    elif dir == 'du':
         start_at_end = False
         up_down = True
-    elif dir == 'd':
+    elif dir == 'ud':
         start_at_end = True
         up_down = True
     else:
-        raise ValueError('Invalid direction, must be a b c or d')
+        raise ValueError('Invalid direction, must be rl, lr, du, or ud')
 
     # Construct the matrices
     num_rows = shape[0]

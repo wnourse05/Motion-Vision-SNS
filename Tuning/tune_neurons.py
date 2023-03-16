@@ -11,6 +11,8 @@ from Tuning.gen_tm9_params import tune_tm9
 from Tuning.gen_ct1_on_params import tune_ct1_on
 from Tuning.gen_ct1_off_params import tune_ct1_off
 
+from Tuning.gen_t4_params import tune_t4
+
 import numpy as np
 from utilities import cutoff_fastest
 
@@ -20,7 +22,7 @@ def debug_print(line, debug):
         return line
 def tune_neurons(cutoffs, mode, debug=False, save=True):
     if mode == 'on':
-        cutoff_retina, cutoff_l1_low, cutoff_l1_high, cutoff_l3, cutoff_mi1, cutoff_mi9, cutoff_ct1_on = cutoffs
+        cutoff_retina, cutoff_l1_low, cutoff_l1_high, cutoff_l3, cutoff_mi1, cutoff_mi9, cutoff_ct1_on, cutoff_t4 = cutoffs
     elif mode == 'off':
         cutoff_retina, cutoff_l2_low, cutoff_l2_high, cutoff_l3, cutoff_tm1, cutoff_tm9, cutoff_ct1_off = cutoffs
     else:
@@ -48,10 +50,14 @@ def tune_neurons(cutoffs, mode, debug=False, save=True):
         if debug:
             print('Tuning CT1 (On)')
         ct1_on, ct1_on_conn = tune_ct1_on(cutoff_ct1_on, retina, l1, mi1, mi1_conn, save=save)
+        if debug:
+            print('Tuning Mi1 -> T4')
+        t4, t4_conn = tune_t4(cutoff_t4, retina, l1, mi1, mi1_conn, save=save)
         data.update({'L1': l1, 'L1Conn': l1_conn,
                      'Mi1': mi1, 'Mi1Conn': mi1_conn,
                      'Mi9': mi9, 'Mi9Conn': mi9_conn,
-                     'CT1On': ct1_on, 'CT1OnConn': ct1_on_conn,})
+                     'CT1On': ct1_on, 'CT1OnConn': ct1_on_conn,
+                     'T4': t4, 'T4Conn': t4_conn})
     if mode == 'off' or mode != 'on':
         if debug:
             print('Tuning L2')

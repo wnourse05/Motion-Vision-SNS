@@ -1,0 +1,39 @@
+[model]
+iterations = 5000
+chains = 16
+params_to_use = [0,1,2,3,4]
+dim_full = 5
+
+[[params]]
+name = "Fast Cutoff Freq"
+lower = 0.1  # 0.0
+upper = 300
+#0
+
+[[params]]
+name = "Ratio Low"
+lower = 1  # 0.0
+upper = 1000
+#1
+
+[[params]]
+name = "CT1 Cutoff Freq"
+lower = 0.1  # 0.0
+upper = 300
+#2
+
+[[params]]
+name = "Mi9 Cutoff Freq"
+lower = 0.1  # 0.0
+upper = 300
+#3
+
+[[params]]
+name = "C Inv"
+lower = 1  # 0.0
+upper = 100
+#4
+
+[[hand_tuned_params]]
+parameter_array = [200.0, 10.0, 200.0, 200.0, 10.0]
+# Good guess

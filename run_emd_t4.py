@@ -1,25 +1,17 @@
 import numpy as np
 import torch
 from motion_vision_networks import gen_single_emd_on
-from utilities import cutoff_fastest, gen_gratings, save_data
+from utilities import cutoff_fastest, gen_gratings, save_data, calc_cap_from_cutoff
 from sns_toolbox.renderer import render
 import matplotlib.pyplot as plt
 import seaborn as sea
 from tqdm import tqdm
-import pickle
-import blosc
+import time
 
 def gen_stimulus(num_cycles):
-    stim_on_lr = np.array([[0.0, 0.0, 0.0],
-                           [0.0, 0.0, 0.0],
-                           [0.0, 0.0, 0.0],
-                           [1.0, 0.0, 0.0],
+    stim_on_lr = np.array([[1.0, 0.0, 0.0],
                            [1.0, 1.0, 0.0],
-                           [1.0, 1.0, 1.0],
-                           [1.0, 1.0, 1.0],
-                           [1.0, 1.0, 1.0],
-                           [0.0, 1.0, 1.0],
-                           [0.0, 0.0, 1.0]])
+                           [1.0, 1.0, 1.0]])
     for i in range(num_cycles):
         if i == 0:
             stim_full = np.copy(stim_on_lr)
@@ -80,7 +72,7 @@ def test_emd(dt, model, net, stim, interval):
 def plot_emd(dt, interval, stim, cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv, plot=False, save=True):
 
     #                   Retina          L1 low              L1 High         L3              Mi1     Mi9          CT1 On          T4     Div gain
-    params = np.array([cutoff_fast, cutoff_fast/ratio_low, cutoff_fast, cutoff_fast, cutoff_fast, cutoff_ct1, cutoff_mi9, cutoff_fast, 1/c_inv])   # Good guess
+    params = np.array([cutoff_fast, cutoff_fast/ratio_low, cutoff_fast, cutoff_fast, cutoff_fast, cutoff_mi9, cutoff_ct1, cutoff_fast, 1/c_inv])   # Good guess
 
     model, net = gen_single_emd_on(dt, params)
     # stim, y = gen_gratings((1,3), freq, 'lr', 5, dt, square=True, device=device)
@@ -95,8 +87,8 @@ def plot_emd(dt, interval, stim, cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9,
         plt.title('Interval: %.2f ms'%(interval*dt))
         plt.legend()
         sea.despine()
-    a_peak = np.max(t4_a[int(0.8*len(t)):])
-    b_peak = np.max(t4_b[int(0.8*len(t)):])
+    a_peak = np.max(t4_a)
+    b_peak = np.max(t4_b)
     ratio = b_peak/a_peak
 
     if save:
@@ -143,8 +135,7 @@ def convert_interval_to_deg_vel(interval, dt):
     vel = 5000/(interval*dt)
     return vel
 
-def t4_freq_response(stim, vels, params, plot=False, save=True):
-    dt = 0.1
+def t4_freq_response(stim, vels, params, dt, plot=False, save=True):
     cutoff_fast = params[0]
     ratio_low = params[1]
     cutoff_ct1 = params[2]
@@ -162,11 +153,11 @@ def t4_freq_response(stim, vels, params, plot=False, save=True):
         plt.suptitle('Cutoff_fast: %.2f, Ratio_low: %.2f, Ratio_CT1: %.2f, Ratio_Mi9: %.2f, C_inv: %.2f' % (
         cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv))
     for i in range(len(vels)):
-        print(vels[i])
+        # print(vels[i])
         if plot:
             plt.subplot(len(vels),1,i+1)
         interval = convert_deg_vel_to_interval(vels[i], dt)
-        print(interval)
+        # print(interval)
         a_peaks, b_peaks[i], ratios[i] = plot_emd(dt, interval, stim, cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv, plot=plot, save=save)
     param_string = '_%i_%i_%i_%i_%i'%(cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv)
     if plot:
@@ -174,7 +165,7 @@ def t4_freq_response(stim, vels, params, plot=False, save=True):
         plt.savefig(dir+'data'+param_string+filetype, dpi=dpi)
 
         fig1 = plt.figure(figsize=size, dpi=dpi)
-        print(fig1.dpi)
+        # print(fig1.dpi)
         plt.suptitle('Cutoff_fast: %.2f, Ratio_low: %.2f, Cutoff_CT1: %.2f, Cutoff_Mi9: %.2f, C_inv: %.2f'%(cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv))
         plt.subplot(2,1,1)
         plt.plot(vels, b_peaks)
@@ -196,15 +187,25 @@ def t4_freq_response(stim, vels, params, plot=False, save=True):
         filename = dir + 'set' + param_string + '.pc'
         save_data(data, filename)
 
-sea.set_theme()
-sea.set_style('ticks')
-sea.color_palette('colorblind')
-device = 'cuda'
-stim_on_lr = gen_stimulus(3)
-num_intervals = 5
-vels = np.geomspace(10,500,num=num_intervals)
-params = [200, 10, 200, 200, 10]
-t4_freq_response(stim_on_lr, vels, params, plot=True, save=True)
+def init():
+    sea.set_theme()
+    sea.set_style('ticks')
+    sea.color_palette('colorblind')
+    stim_on_lr = gen_stimulus(1)
+    num_intervals = 4
+    vels = np.linspace(10,180,num=num_intervals)
+    #
+    dt = 0.1
+    goal = np.linspace(1.0, 0.1, num=num_intervals)
+    return stim_on_lr, vels, dt, goal
+
+stim, vels, dt, goal = init()
+cutoff_mi9 = 5/(2*np.pi*vels[0])
+params = [200, 10, 200, cutoff_mi9, 10]
+start = time.time()
+t4_freq_response(stim, vels, params, dt, plot=True, save=True)
+end = time.time()-start
+print(end)
 
 plt.show()
 print('Done')

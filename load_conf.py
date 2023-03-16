@@ -39,4 +39,4 @@ def load_sampler_config(toml_file_path: Path) -> Tuple[int, int]:
 
 
 if __name__ == '__main__':
-    load_bounds(Path('conf_t4.toml'))
+    load_bounds(Path('conf_t4_reduced.toml'))

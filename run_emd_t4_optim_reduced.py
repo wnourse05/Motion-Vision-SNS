@@ -18,7 +18,7 @@ from pathlib import Path
 
 def convert_deg_vel_to_interval(vel, dt):
     scaled_vel = vel/5    # columns per second
-    interval = int((1/scaled_vel)/(dt/1000))
+    interval = ((1/scaled_vel)/(dt/1000)).astype(int)
     return interval
 
 def convert_interval_to_deg_vel(interval, dt):
@@ -158,7 +158,7 @@ def freq_response_emd(dt, vels, intervals, num_intervals, stim, params_mcmc, dir
     return a_peaks, b_peaks, ratios
 
 def cost_function(a_peaks, b_peaks, ratios, goal):
-    cost = sum_of_lsq(b_peaks, goal)
+    cost = 100*sum_of_lsq(b_peaks, goal)
     if np.isnan(cost):
         cost =1e5
 
@@ -232,7 +232,7 @@ def run_t4_estimation(dt, vels, intervals, num_intervals, stim ,dir, goal) -> py
     :return: sampler result
     """
     # Setup simulator
-    path_config = Path("conf_t4.toml")
+    path_config = Path("conf_t4_reduced.toml")
 
     random_seed = 7
     the_rng = np.random.default_rng(seed=random_seed)
@@ -260,6 +260,8 @@ def run_t4_estimation(dt, vels, intervals, num_intervals, stim ,dir, goal) -> py
     print(lb_param)
     print(ub_param)
     print(params_to_use)
+    print('Guessing...')
+    print(test_params[params_to_use])
     test = problem.objective(test_params[params_to_use])
     print(f'check that this number (bad params loss) is positive: {test}')
     _ = input('check OK, then hit Enter')
@@ -324,4 +326,7 @@ def main():
     dir = 'T4 Velocity/'
     run_t4_estimation(dt, vels, intervals, num_intervals, stim_on_lr, dir, goal)
 
-
+if __name__ == '__main__':
+    # logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
+    #                     level=logging.INFO)
+    main()

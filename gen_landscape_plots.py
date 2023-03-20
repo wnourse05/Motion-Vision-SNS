@@ -24,7 +24,7 @@ mcmc_data = {
     #'agg': pickle.load(open(base_folder / '2021-May-10_07-18.pypesto_results.all.true_uniform_prior.64.pkl', 'rb')),
 }
 
-h5_path = base_folder / "t4_a.h5" #"h5_files/g_syns2.h5"
+h5_path = base_folder / "2023-Mar-17_20-t4.h5" #"h5_files/g_syns2.h5"
 toml_path = Path("conf_t4.toml")
 all_list_params = lc.load_param_names(toml_path)
 params_used = np.array([0,1,2,3,4,5,6,7,8,9,10,11])

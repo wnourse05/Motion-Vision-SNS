@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from motion_vision_networks import gen_single_emd_on
 from utilities import cutoff_fastest, gen_gratings, save_data, calc_cap_from_cutoff
@@ -16,9 +17,14 @@ logging.disable()
 
 from pathlib import Path
 
+def plot_2_vars(t, a, b):
+    plt.figure()
+    plt.plot(t,a)
+    plt.plot(t, b)
+
 def convert_deg_vel_to_interval(vel, dt):
     scaled_vel = vel/5    # columns per second
-    interval = ((1/scaled_vel)/(dt/1000)).astype(int)
+    interval = ((1/scaled_vel)/(dt/1000))
     return interval
 
 def convert_interval_to_deg_vel(interval, dt):
@@ -41,13 +47,13 @@ def sum_of_lsq(goal, data):
     error_lsq = np.sum(error_vector)
     return error_lsq
 
-def test_emd(dt, model, net, stim, interval, vel, param_string, dir):
+def test_emd(dt, model, net, stim, interval):
     model.reset()
-
+    interval = int(interval)
     num_samples = np.shape(stim)[0]
-    t = np.linspace(0, dt*num_samples*interval, num=num_samples*interval)
+    t = np.linspace(0, dt*num_samples*interval, num=num_samples*int(interval))
 
-    data = np.zeros([num_samples*interval, net.get_num_outputs_actual()])
+    data = np.zeros([num_samples*int(interval), net.get_num_outputs_actual()])
 
     # if interval:
     index = 0
@@ -67,24 +73,24 @@ def test_emd(dt, model, net, stim, interval, vel, param_string, dir):
 
     # data = data.to('cpu')
     data = data.transpose()
-    r_l = data[0, :]
-    r_c = data[1, :]
-    r_r = data[2, :]
-    l1_l = data[3, :]
-    l1_c = data[4, :]
-    l1_r = data[5, :]
-    l3_l = data[6, :]
-    l3_c = data[7, :]
-    l3_r = data[8, :]
-    mi1_l = data[9, :]
-    mi1_c = data[10, :]
-    mi1_r = data[11, :]
-    mi9_l = data[12, :]
-    mi9_c = data[13, :]
-    mi9_r = data[14, :]
-    ct1_l = data[15, :]
-    ct1_c = data[16, :]
-    ct1_r = data[17, :]
+    # r_l = data[0, :]
+    # r_c = data[1, :]
+    # r_r = data[2, :]
+    # l1_l = data[3, :]
+    # l1_c = data[4, :]
+    # l1_r = data[5, :]
+    # l3_l = data[6, :]
+    # l3_c = data[7, :]
+    # l3_r = data[8, :]
+    # mi1_l = data[9, :]
+    # mi1_c = data[10, :]
+    # mi1_r = data[11, :]
+    # mi9_l = data[12, :]
+    # mi9_c = data[13, :]
+    # mi9_r = data[14, :]
+    # ct1_l = data[15, :]
+    # ct1_c = data[16, :]
+    # ct1_r = data[17, :]
     t4_a = data[18, :]
     t4_b = data[19, :]
 
@@ -93,40 +99,39 @@ def test_emd(dt, model, net, stim, interval, vel, param_string, dir):
     ratio = b_peak / a_peak
 
 
-    trial = {'interval':    interval,
-             't':           t,
-             'r_l':         r_l,
-             'r_c':         r_c,
-             'r_r':         r_r,
-             'l1_l':        l1_l,
-             'l1_c':        l1_c,
-             'l1_r':        l1_r,
-             'l3_l':        l3_l,
-             'l3_c':        l3_c,
-             'l3_r':        l3_r,
-             'mi1_l':       mi1_l,
-             'mi1_c':       mi1_c,
-             'mi1_r':       mi1_r,
-             'mi9_l':       mi9_l,
-             'mi9_c':       mi9_c,
-             'mi9_r':       mi9_r,
-             'ct1_l':       ct1_l,
-             'ct1_c':       ct1_c,
-             'ct1_r':       ct1_r,
-             't4_a':        t4_a,
-             't4_b':        t4_b,
-             'a_peak':      a_peak,
-             'b_peak':      b_peak}
+    # trial = {'interval':    interval,
+    #          't':           t,
+    #          'r_l':         r_l,
+    #          'r_c':         r_c,
+    #          'r_r':         r_r,
+    #          'l1_l':        l1_l,
+    #          'l1_c':        l1_c,
+    #          'l1_r':        l1_r,
+    #          'l3_l':        l3_l,
+    #          'l3_c':        l3_c,
+    #          'l3_r':        l3_r,
+    #          'mi1_l':       mi1_l,
+    #          'mi1_c':       mi1_c,
+    #          'mi1_r':       mi1_r,
+    #          'mi9_l':       mi9_l,
+    #          'mi9_c':       mi9_c,
+    #          'mi9_r':       mi9_r,
+    #          'ct1_l':       ct1_l,
+    #          'ct1_c':       ct1_c,
+    #          'ct1_r':       ct1_r,
+    #          't4_a':        t4_a,
+    #          't4_b':        t4_b,
+    #          'a_peak':      a_peak,
+    #          'b_peak':      b_peak}
 
     # vel = convert_interval_to_deg_vel(interval, dt)
     # param_string = '_%i_%i_%i_%i_%i' % (cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv)
-    dir = 'T4 Velocity/'
-    filename = dir + str(int(vel)) + '_trial' + param_string
-    save_data(trial, filename)
+    # filename = dir + str(int(vel)) + '_trial' + param_string
+    # save_data(trial, filename)
 
     return a_peak, b_peak, ratio
 
-def freq_response_emd(dt, vels, intervals, num_intervals, stim, params_mcmc, dir):
+def freq_response_emd(dt, intervals, num_intervals, stim, params_mcmc):
     cutoff_fast = params_mcmc[0]
     ratio_low = params_mcmc[1]
     cutoff_ct1 = params_mcmc[2]
@@ -135,25 +140,26 @@ def freq_response_emd(dt, vels, intervals, num_intervals, stim, params_mcmc, dir
 
     #                   Retina          L1 low              L1 High         L3              Mi1     Mi9          CT1 On          T4     Div gain
     params = np.array([cutoff_fast, cutoff_fast/ratio_low, cutoff_fast, cutoff_fast, cutoff_fast, cutoff_mi9, cutoff_ct1, cutoff_fast, 1/c_inv])   # Good guess
+    # print(params)
 
     model, net = gen_single_emd_on(dt, params)
 
-    param_string = '_%i_%i_%i_%i_%i.pc' % (cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv)
-    dir = 'T4 Velocity/'
+    # param_string = '_%i_%i_%i_%i_%i.pc' % (cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv)
+    # dir = 'T4 Velocity/'
 
-    a_peaks = np.zeros_like(vels)
-    b_peaks = np.zeros_like(vels)
-    ratios = np.zeros_like(vels)
+    a_peaks = np.zeros_like(intervals)
+    b_peaks = np.zeros_like(intervals)
+    ratios = np.zeros_like(intervals)
 
     for i in range(num_intervals):
-        a_peaks[i], b_peaks[i], ratios[i] = test_emd(dt, model, net, stim, intervals[i], vels[i], param_string, dir)
+        a_peaks[i], b_peaks[i], ratios[i] = test_emd(dt, model, net, stim, intervals[i])
 
-    data = {'vels': vels,
-            'a_peaks': a_peaks,
-            'b_peaks': b_peaks,
-            'ratios': ratios}
-    filename = dir + 'set' + param_string
-    save_data(data, filename)
+    # data = {'vels': vels,
+    #         'a_peaks': a_peaks,
+    #         'b_peaks': b_peaks,
+    #         'ratios': ratios}
+    # filename = dir + 'set' + param_string
+    # save_data(data, filename)
 
     return a_peaks, b_peaks, ratios
 
@@ -164,12 +170,12 @@ def cost_function(a_peaks, b_peaks, ratios, goal):
 
     return cost
 
-def evaluate(params_mcmc, dt, vels, intervals, num_intervals, stim, dir, goal):
-    a_peaks, b_peaks, ratios = freq_response_emd(dt, vels, intervals, num_intervals, stim, params_mcmc, dir)
+def evaluate(params_mcmc, dt, intervals, num_intervals, stim, goal):
+    a_peaks, b_peaks, ratios = freq_response_emd(dt, intervals, num_intervals, stim, params_mcmc)
     cost = cost_function(a_peaks, b_peaks, ratios, goal)
     return cost
 
-def easy_neg_log_likelihood(sample_params: np.ndarray, actual_indices: list, rest_params: np.ndarray, dt, vels, intervals, num_intervals, stim, dir, goal) -> Union[float, np.ndarray]:
+def easy_neg_log_likelihood(sample_params: np.ndarray, actual_indices: list, rest_params: np.ndarray, vels, num_intervals, stim, goal) -> Union[float, np.ndarray]:
 
     """
     likelihood function to compare actual vs estimated params with negative log
@@ -182,7 +188,9 @@ def easy_neg_log_likelihood(sample_params: np.ndarray, actual_indices: list, res
     for s_idx, replace_idx in enumerate(actual_indices):
         real_params[replace_idx] = sample_params[s_idx]
 
-    the_cost = evaluate(real_params, dt, vels, intervals, num_intervals, stim, dir, goal)
+    dt = min(calc_cap_from_cutoff(real_params[0])/10, 0.1)
+    intervals = convert_deg_vel_to_interval(vels, dt)
+    the_cost = evaluate(real_params, dt, intervals, num_intervals, stim, goal)
 
     current_datetime = datetime.datetime.now().strftime('%Y-%b-%d_%H-%M')
     the_cost = np.clip(the_cost, a_min=0.0, a_max=10e5)
@@ -215,7 +223,7 @@ def save_estimated_data(result_sampler: pypesto.Result) -> None:
     del_auto_corr = result_sampler_dict.pop('auto_correlation')
     del_message = result_sampler_dict.pop('message')
     del_eff_sample_size = result_sampler_dict.pop('effective_sample_size')
-    dump_filename = datetime.datetime.now().strftime('%Y-%b-%d_%H-%M.rf_hindlimb.h5')
+    dump_filename = datetime.datetime.now().strftime('%Y-%b-%d_%H-%M.t4a.h5')
     with h5py.File(dump_filename, 'w') as le_file:
         for key, value in result_sampler_dict.items():
             if value is not None:
@@ -223,7 +231,7 @@ def save_estimated_data(result_sampler: pypesto.Result) -> None:
     # Note: how to open file example - list(F['trace_x'])
     return None
 
-def run_t4_estimation(dt, vels, intervals, num_intervals, stim ,dir, goal) -> pypesto.Result:
+def run_t4_estimation(vels, num_intervals, stim, goal) -> pypesto.Result:
     """
     starts the simulation for the rat hindlimb model
 
@@ -250,7 +258,7 @@ def run_t4_estimation(dt, vels, intervals, num_intervals, stim ,dir, goal) -> py
     rest_params = np.copy(test_params)
     rest_params[params_to_use] = np.copy(rest_params_random[params_to_use])
 
-    likelihood = pypesto.Objective(easy_neg_log_likelihood, fun_args=(params_to_use, rest_params, dt, vels, intervals, num_intervals, stim, dir, goal))
+    likelihood = pypesto.Objective(easy_neg_log_likelihood, fun_args=(params_to_use, rest_params, vels, num_intervals, stim, goal))
 
     objective1 = pypesto.objective.AggregatedObjective([likelihood, prior_term])
     objective1.initialize()
@@ -262,7 +270,9 @@ def run_t4_estimation(dt, vels, intervals, num_intervals, stim ,dir, goal) -> py
     print(params_to_use)
     print('Guessing...')
     print(test_params[params_to_use])
+    debug_params = np.array([100, 500, 150, 250, 10])
     test = problem.objective(test_params[params_to_use])
+    # test = problem.objective(debug_params)
     print(f'check that this number (bad params loss) is positive: {test}')
     _ = input('check OK, then hit Enter')
 
@@ -272,7 +282,7 @@ def run_t4_estimation(dt, vels, intervals, num_intervals, stim ,dir, goal) -> py
         x0 = []
         start_idx = 0
         while len(x0) < num_chains:
-            print(start_idx)
+            print(start_idx, len(x0))
             possible_guesses = [np.array([the_rng.uniform(low=lb_param[i], high=ub_param[i])
                                 for i in params_to_use])
                                 for _ in range(num_chains)]
@@ -319,12 +329,12 @@ def run_t4_estimation(dt, vels, intervals, num_intervals, stim ,dir, goal) -> py
 def main():
     stim_on_lr = gen_stimulus(1)
     num_intervals = 4
-    dt = 0.1
     vels = np.linspace(10, 180, num=num_intervals)
-    intervals = convert_deg_vel_to_interval(vels, dt)
-    goal = np.linspace(1.0, 0.1, num=num_intervals)
-    dir = 'T4 Velocity/'
-    run_t4_estimation(dt, vels, intervals, num_intervals, stim_on_lr, dir, goal)
+    # goal = np.linspace(1.0, 0.1, num=num_intervals)
+    goal_x = np.linspace(0.0, 4.0, num=num_intervals)
+    goal = (4 * np.exp(goal_x)) / (1 + np.exp(goal_x)) ** 2
+    # dir = 'T4 Velocity/'
+    run_t4_estimation(vels, num_intervals, stim_on_lr, goal)
 
 if __name__ == '__main__':
     # logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',

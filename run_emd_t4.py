@@ -122,7 +122,7 @@ def plot_emd(dt, interval, stim, cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9,
         filetype = '.pc'
         dir = 'T4 Velocity/'
         filename = dir + str(int(vel)) + '_trial' + param_string + filetype
-        save_data(trial, filename)
+        # save_data(trial, filename)
 
     return a_peak, b_peak, ratio
 
@@ -158,16 +158,17 @@ def t4_freq_response(stim, vels, params, dt, plot=False, save=True):
             plt.subplot(len(vels),1,i+1)
         interval = convert_deg_vel_to_interval(vels[i], dt)
         # print(interval)
-        a_peaks, b_peaks[i], ratios[i] = plot_emd(dt, interval, stim, cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv, plot=plot, save=save)
+        a_peaks[i], b_peaks[i], ratios[i] = plot_emd(dt, interval, stim, cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv, plot=plot, save=save)
     param_string = '_%i_%i_%i_%i_%i'%(cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv)
     if plot:
         filetype = '.svg'
-        plt.savefig(dir+'data'+param_string+filetype, dpi=dpi)
+        # plt.savefig(dir+'data'+param_string+filetype, dpi=dpi)
 
         fig1 = plt.figure(figsize=size, dpi=dpi)
         # print(fig1.dpi)
         plt.suptitle('Cutoff_fast: %.2f, Ratio_low: %.2f, Cutoff_CT1: %.2f, Cutoff_Mi9: %.2f, C_inv: %.2f'%(cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv))
         plt.subplot(2,1,1)
+        plt.plot(vels, a_peaks)
         plt.plot(vels, b_peaks)
         sea.despine()
         plt.xscale('log')
@@ -177,7 +178,7 @@ def t4_freq_response(stim, vels, params, dt, plot=False, save=True):
         plt.title('B/A')
         plt.xscale('log')
         sea.despine()
-        plt.savefig(dir+'curve' + param_string + filetype, dpi=dpi)
+        # plt.savefig(dir+'curve' + param_string + filetype, dpi=dpi)
     if save:
         dir = 'T4 Velocity/'
         data = {'vels':     vels,
@@ -185,7 +186,7 @@ def t4_freq_response(stim, vels, params, dt, plot=False, save=True):
                 'b_peaks':  b_peaks,
                 'ratios':   ratios}
         filename = dir + 'set' + param_string + '.pc'
-        save_data(data, filename)
+        # save_data(data, filename)
 
 def init():
     sea.set_theme()
@@ -201,6 +202,7 @@ def init():
 
 stim, vels, dt, goal = init()
 cutoff_mi9 = 5/(2*np.pi*vels[0])
+cutoff_mi9 = 200
 params = [200, 10, 200, cutoff_mi9, 10]
 start = time.time()
 t4_freq_response(stim, vels, params, dt, plot=True, save=True)

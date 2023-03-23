@@ -24,10 +24,10 @@ mcmc_data = {
     #'agg': pickle.load(open(base_folder / '2021-May-10_07-18.pypesto_results.all.true_uniform_prior.64.pkl', 'rb')),
 }
 
-h5_path = base_folder / "2023-Mar-17_20-t4.h5" #"h5_files/g_syns2.h5"
-toml_path = Path("conf_t4.toml")
+h5_path = base_folder / '2023-Mar-22_22-50.t4a.h5'#"2023-Mar-17_20-t4.h5" #"h5_files/g_syns2.h5"
+toml_path = Path("conf_t4_reduced.toml")
 all_list_params = lc.load_param_names(toml_path)
-params_used = np.array([0,1,2,3,4,5,6,7,8,9,10,11])
+params_used = np.array([0,1,2,3,4])
 list_params = []
 
 for i in params_used:
@@ -56,7 +56,7 @@ df_results['neglogpost'] = df_results['neglogpost'] - np.min(df_results['neglogp
 print(np.max(df_results['neglogpost']))
 print(np.min(df_results['neglogpost']))
 print(np.mean(df_results['neglogpost']))
-print(2e3)
+print(2e5)
 print(1e0)
 
 df_results = df_results.sort_values(by='neglogpost', ascending=False)
@@ -72,47 +72,50 @@ def create_posterior(le_orig_data, filename, sample_ratio:float = 1.0, alpha=0.2
     nlp = (le_orig_data['neglogpost'])  # .sample(n=sample_size)
     sns.set_style(style='white')
     g = sns.JointGrid(data=le_orig_data, x=x_axis, y=y_axis, height=10)
-    the_cmap = cm.get_cmap(name='plasma')
+    the_cmap = sns.color_palette('mako', as_cmap=True)
     # display_min = max(1e-6, nlp.min()) if nlp.min() < 5.0 else 1e1
     # print(display_min)
-    norm = LogNorm(1e1, 2e3)    # TODO
-    #norm = None
+    # norm = LogNorm(1e1, 2e3)    # TODO
+    # norm = LogNorm(1e0, 2e5)
+    norm = None
     # inv_norm = LogNorm(1.0/1e3, 1.0/display_min)
     sm = plt.cm.ScalarMappable(cmap=the_cmap, norm=norm)
     # g.plot_joint(sns.scatterplot, alpha=alpha, size=1.0/nlp, sizes=(10, 40), size_norm=inv_norm, hue=nlp, hue_norm=norm, palette=the_cmap, legend=False)  # alpha=0.002, hue_norm=LogNorm(vmin=nlp.min(), vmax=nlp.max()),
     g.plot_joint(sns.scatterplot, alpha=alpha, hue=nlp, hue_norm=norm, palette=the_cmap, legend=False, rasterized=True)  # alpha=0.002, hue_norm=LogNorm(vmin=nlp.min(), vmax=nlp.max()),
-    g.ax_joint.figure.colorbar(sm, shrink=10.0)
+    g.ax_joint.figure.colorbar(sm, shrink=10.0, ax=plt.gca())
     g.plot_marginals(sns.histplot, kde=True)
-    plt.savefig(f'posterior_{x_axis}_{y_axis}_{filename}.png', dpi=600)
+    # plt.savefig(f'posterior_{x_axis}_{y_axis}_{filename}.png', dpi=600)
 
 print('Making first plot')
-create_posterior(df_results, "old_cost", sample_ratio=1.0, x_axis=list_params[5], y_axis=list_params[3])
+# create_posterior(df_results, "old_cost", sample_ratio=1.0, x_axis=list_params[0], y_axis=list_params[1])
 
 print('Making second plot')
 def create_posterior_big_plot_color(le_orig_data, filename, sample_ratio: float = 1.0, alpha=0.05):
     sns.set_context("paper", rc={"font.size": 48, "axes.titlesize": 48, "axes.labelsize": 48, "xtick.labelsize": 48,
                                  "ytick.labelsize": 48})
     sns.set_style("white")
-    plt.ioff()
     le_data = le_orig_data.sort_values(by=['neglogpost'], ignore_index=True, ascending=False)
     sample_size = int(sample_ratio * len(le_data['neglogpost']))
     nlp = (le_data['neglogpost'])  # .sample(n=sample_size)
     print(nlp.min())
-    the_cmap = cm.get_cmap(name='plasma')
+    the_cmap = sns.color_palette('rocket', as_cmap=True)
     # display_min = max(1e0, nlp.min())
     # print(display_min)
-    norm = LogNorm(1e1, 2e3)
+    norm = LogNorm(1e0, 2e5)
     sm = plt.cm.ScalarMappable(cmap=the_cmap, norm=norm)
 
     cols_to_use = [col for col in le_data.columns if col != 'neglogpost']
     g = sns.PairGrid(data=le_data, height=10, vars=cols_to_use)
-    g.map_lower(sns.scatterplot, alpha=alpha, hue=nlp, hue_norm=norm, palette=the_cmap,
-                legend=False)  # alpha=0.002, hue_norm=LogNorm(vmin=nlp.min(), vmax=nlp.max()),
+    g.map_offdiag(sns.scatterplot, alpha=alpha, hue=nlp, hue_norm=norm, palette=the_cmap,
+                legend=False)
+    # g.map_lower(sns.scatterplot, alpha=alpha, hue=nlp, hue_norm=norm, palette=the_cmap,
+    #             legend=False)  # alpha=0.002, hue_norm=LogNorm(vmin=nlp.min(), vmax=nlp.max()),
+    # g.map_upper(sns.kdeplot, fill=True, thresh=0)#, hue=nlp, hue_norm=norm, palette=the_cmap)
     # g.ax_joint.figure.colorbar(sm, shrink=10.0)
     g.map_diag(sns.histplot, kde=True)
-    plt.savefig(f'big_plot_{filename}.svg')
+    plt.savefig(f'big_plot_{filename}.png')
     # plt.show()
 
-create_posterior_big_plot_color(df_results, "filename here")
+create_posterior_big_plot_color(df_results, "t4_mcmc_v2")
 
 plt.show()

@@ -5,7 +5,7 @@ def tune_tm9(cutoff, save=True):
     name = 'Retina'
     params = {'cutoff': cutoff,
               'invert': False,
-              'initialValue': activity_range,
+              'initialValue': 0.0,
               'bias': 0.0}
 
     data = {'name': name,

@@ -1,26 +1,22 @@
 from utilities import gen_gratings, dt
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 import numpy as np
 
-def grating(dir):
-    period = (10*dt)/1000
-    freq = 1/period
-    stim, y = gen_gratings([3,3], freq, dir, 1)
-
-    stim = stim.to('cpu').numpy()
-    num_samples = np.shape(stim)[0]
-
-    plt.figure()
-    for i in range(num_samples):
-        matrix = np.reshape(stim[i,:], (3,3))
-        plt.subplot(2,4,i+1)
-        plt.imshow(matrix, cmap='gray', vmin=0, vmax=1)
-        # plt.colorbar()
-    plt.suptitle(dir)
-
-grating('a')
-grating('b')
-grating('c')
-grating('d')
-
+angles = np.arange(0, 360, 30)
+vel = 40
+dt = 1000
+num_steps = 5
+wavelength = 160
+shape = (32,32)
+fig = plt.figure()
+grid = GridSpec(num_steps, len(angles), figure=fig)
+for i in range(len(angles)):
+    gratings = gen_gratings(wavelength, angles[i], vel, dt, num_steps)
+    for j in range(num_steps):
+        plt.subplot(grid[j, i])
+        if j == 0:
+            plt.title('%i'%(angles[i]))
+        plt.set_cmap('gray')
+        plt.imshow(gratings[j,:].reshape(shape), interpolation='none')
 plt.show()

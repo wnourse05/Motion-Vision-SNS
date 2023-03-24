@@ -142,65 +142,27 @@ def add_scaled_bandpass_filter(net: Network, cutoff_lower, cutoff_higher, k, inv
 c_fastest = calc_cap_from_cutoff(cutoff_fastest)
 dt = c_fastest/10
 
-def gen_gratings(shape, freq, dir, num_cycles, dt, square=False, device='cpu'):
-    # Get the number of samples
-    period = 1/freq
-    num_samples = int(num_cycles*period/(dt/1000))
-    num_samples_period = int(period/(dt/1000))
+def gen_gratings(wavelength, angle, vel, dt, num_steps, fov=160, res=5):
+    # Generate meshgrid
+    x = np.arange(0, fov, res)
+    x_rad = np.deg2rad(x)
+    X, Y = np.meshgrid(x_rad, x_rad)
+    Y = np.flipud(Y)
 
-    # Generate the reference wave
-    if square:
-        x = torch.zeros(num_samples_period, device=device)
-        x[:int(num_samples_period / 2)] = 1.0
-        y = torch.zeros(num_samples_period, device=device)
-        y[:] = x
-    else:
-        x = torch.linspace(0, num_cycles*2*np.pi, num_samples, device=device)
-        y = torch.sin(x)/2+0.5
+    wavelength_rad = np.deg2rad(wavelength)
+    angle_rad = np.deg2rad(angle)
 
-    for i in range(num_cycles):
-        y = torch.hstack((y,x))
-    if dir == 'rl':
-        start_at_end = False
-        up_down = False
-    elif dir == 'lr':
-        start_at_end = True
-        up_down = False
-    elif dir == 'du':
-        start_at_end = False
-        up_down = True
-    elif dir == 'ud':
-        start_at_end = True
-        up_down = True
-    else:
-        raise ValueError('Invalid direction, must be rl, lr, du, or ud')
+    dt_s = dt / 1000
+    disp = vel * dt_s
+    disp_rad = np.deg2rad(disp)
 
-    # Construct the matrices
-    num_rows = shape[0]
-    num_cols = shape[1]
-    if up_down:
-        window_length = num_rows
-    else:
-        window_length = num_cols
-    matrix = torch.zeros(shape, device=device)
-    stimulus = torch.zeros(num_cols*num_rows, device=device)
-
-    # Fill the matrices
-    for i in tqdm(range(num_samples-window_length+1)):
-        # print('     %i/%i'%(i+1,num_samples-window_length+1))
-        window = y[i:i+window_length]
-        if up_down:
-            for col in range(num_cols):
-                matrix[:,col] = window
-        else:
-            for row in range(num_rows):
-                matrix[row,:] = window
+    for i in range(num_steps):
+        grating = 0.5 * np.sin(2 * np.pi * (X * np.cos(angle_rad) + Y * np.sin(angle_rad)) / wavelength_rad + i*disp_rad) + 0.5
+        grating_flat = grating.flatten()
         if i == 0:
-            stimulus = torch.flatten(matrix)
+            gratings = np.copy(grating_flat)
         else:
-            if start_at_end:
-                stimulus = torch.vstack((torch.flatten(matrix), stimulus))
-            else:
-                stimulus = torch.vstack((stimulus, torch.flatten(matrix)))
+            gratings = np.vstack((gratings, grating_flat))
 
-    return stimulus, y
+    return gratings
+

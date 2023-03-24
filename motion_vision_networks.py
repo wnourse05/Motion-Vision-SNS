@@ -323,7 +323,7 @@ def gen_single_emd_off(dt, params):
     ####################################################################################################################
     GATHER PROPERTIES
     """
-    cutoffs = params#[:-1]
+    cutoffs = params[:-2]
     data = tune_neurons(cutoffs[:-1], 'off')
     # c = params[-1]
 
@@ -440,10 +440,12 @@ def gen_single_emd_off(dt, params):
     # params_conn_t4 = data['T4Conn']
 
     # g_mi1_t4, rev_mi1_t4 = synapse_target(activity_range, 0.0)
-    g_pd_t5, rev_pd_t5 = synapse_target(0.0, activity_range)
+    # g_pd_t5, rev_pd_t5 = synapse_target(0.0, activity_range)
     g_nd_t5, rev_nd_t5 = synapse_target(activity_range, 0.0)
     g_cd_t5 = g_nd_t5
     rev_cd_t5 = rev_nd_t5
+    g_pd_t5 = params[-2]
+    rev_pd_t5 = params[-1]
 
     synapse_cd_t5 = NonSpikingSynapse(max_conductance=g_cd_t5/2, reversal_potential=rev_cd_t5, e_lo=0.0, e_hi=activity_range)
     synapse_pd_t5 = NonSpikingSynapse(max_conductance=g_pd_t5, reversal_potential=rev_pd_t5, e_lo=0.0, e_hi=activity_range)

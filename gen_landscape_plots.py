@@ -3,6 +3,7 @@ import numpy as np
 from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import seaborn as sns
 from scipy.stats import wasserstein_distance, energy_distance
 import load_conf as lc
@@ -24,7 +25,7 @@ mcmc_data = {
     #'agg': pickle.load(open(base_folder / '2021-May-10_07-18.pypesto_results.all.true_uniform_prior.64.pkl', 'rb')),
 }
 
-h5_path = base_folder / '2023-Mar-22_22-50.t4a.h5'#"2023-Mar-17_20-t4.h5" #"h5_files/g_syns2.h5"
+h5_path = base_folder / "2023-Mar-17_20-t4.h5"#'2023-Mar-22_22-50.t4a.h5' #"h5_files/g_syns2.h5"
 toml_path = Path("conf_t4_reduced.toml")
 all_list_params = lc.load_param_names(toml_path)
 params_used = np.array([0,1,2,3,4])
@@ -61,8 +62,23 @@ print(1e0)
 
 df_results = df_results.sort_values(by='neglogpost', ascending=False)
 #df_results['neglogpost'] = (df_results['neglogpost'] - np.min(df_results['neglogpost']))/(np.max(df_results['neglogpost']) - np.min(df_results['neglogpost']))
+costs = np.unique(df_results['neglogpost'])
+plt.figure()
+plt.subplot(3,1,1)
+plt.plot(costs)
+plt.subplot(3,1,2)
+plt.plot(costs)
+plt.yscale('log')
+plt.subplot(3,1,3)
+plt.hist(costs, bins=200)
 
 print(df_results)
+map_main = plt.cm.magma(np.linspace(0, 0.5, 256))
+map_outliers = plt.cm.magma(np.linspace(0.6, 1, 256))
+all_colors = np.vstack((map_main, map_outliers))
+map_full = mpl.colors.LinearSegmentedColormap.from_list('magma', all_colors)
+
+divnorm = mpl.colors.TwoSlopeNorm(vmin=1e0, vcenter=1000, vmax=2e5)
 #print(np.where(df_results['neglogpost'] == np.min(df_results['neglogpost'])))
 
 def create_posterior(le_orig_data, filename, sample_ratio:float = 1.0, alpha=0.2, x_axis:str = 'g_Na', y_axis:str = 'g_Kd'):
@@ -72,12 +88,15 @@ def create_posterior(le_orig_data, filename, sample_ratio:float = 1.0, alpha=0.2
     nlp = (le_orig_data['neglogpost'])  # .sample(n=sample_size)
     sns.set_style(style='white')
     g = sns.JointGrid(data=le_orig_data, x=x_axis, y=y_axis, height=10)
-    the_cmap = sns.color_palette('mako', as_cmap=True)
+    the_cmap = sns.color_palette('Greys_r', as_cmap=True)
+    norm = mpl.colors.Normalize(vmin=500, vmax=200000)
     # display_min = max(1e-6, nlp.min()) if nlp.min() < 5.0 else 1e1
     # print(display_min)
     # norm = LogNorm(1e1, 2e3)    # TODO
-    # norm = LogNorm(1e0, 2e5)
-    norm = None
+    norm = LogNorm(1e0, 2e5)
+    the_cmap = map_full
+    norm = divnorm
+    # norm = None
     # inv_norm = LogNorm(1.0/1e3, 1.0/display_min)
     sm = plt.cm.ScalarMappable(cmap=the_cmap, norm=norm)
     # g.plot_joint(sns.scatterplot, alpha=alpha, size=1.0/nlp, sizes=(10, 40), size_norm=inv_norm, hue=nlp, hue_norm=norm, palette=the_cmap, legend=False)  # alpha=0.002, hue_norm=LogNorm(vmin=nlp.min(), vmax=nlp.max()),
@@ -102,6 +121,8 @@ def create_posterior_big_plot_color(le_orig_data, filename, sample_ratio: float 
     # display_min = max(1e0, nlp.min())
     # print(display_min)
     norm = LogNorm(1e0, 2e5)
+    the_cmap = map_full
+    norm = divnorm
     sm = plt.cm.ScalarMappable(cmap=the_cmap, norm=norm)
 
     cols_to_use = [col for col in le_data.columns if col != 'neglogpost']

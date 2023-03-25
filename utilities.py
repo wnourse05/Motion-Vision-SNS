@@ -6,6 +6,10 @@ from typing import Any
 import numbers
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import load_conf as lc
+from pathlib import Path
+import pandas as pd
+import h5py
 
 from sns_toolbox.neurons import NonSpikingNeuron
 from sns_toolbox.connections import NonSpikingSynapse, NonSpikingMatrixConnection
@@ -166,3 +170,23 @@ def gen_gratings(wavelength, angle, vel, dt, num_steps, fov=160, res=5):
 
     return gratings
 
+def h5_to_dataframe(h5_path, toml_path, params_used):
+    all_list_params = lc.load_param_names(Path(toml_path))
+    list_params = []
+
+    for i in params_used:
+        list_params.append(all_list_params[i])
+
+    with h5py.File(h5_path) as h5_file:
+        trace_x = h5_file['trace_x'][()]  # ex. (24, 12001 20)
+        # print(trace_x.shape)
+        trace_neglogpost = h5_file['trace_neglogpost'][()]  # ex. (24, 12001)
+        # print(trace_neglogpost.shape)
+        trace_neglogpost_flat = trace_neglogpost.flatten()
+        # print(trace_neglogpost_flat.shape)
+        trace_x_flat = trace_x.reshape((trace_x.shape[0] * trace_x.shape[1], trace_x.shape[2]))
+        sr_trace_neglogpost = pd.Series(data=trace_neglogpost_flat, name='neglogpost')
+        df_results = pd.DataFrame(data=trace_x_flat, columns=list_params)
+        df_results.insert(0, "neglogpost", sr_trace_neglogpost)
+
+    return df_results

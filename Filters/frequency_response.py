@@ -42,7 +42,7 @@ def sample_frequency_response(model: Backend, low_hz=0.1, high_hz=100, num_sampl
 
     if debug:
         plt.show()
-    # output_peaks = np.max(outputs[:,:(num_samples/2)], axis=1)
+    # output_peaks = np.max(outputs[:,:(num_steps/2)], axis=1)
 
     if plot:
         fig = plt.figure()

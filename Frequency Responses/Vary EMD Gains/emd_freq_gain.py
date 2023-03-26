@@ -3,7 +3,7 @@ import torch
 import pickle
 
 from utilities import cutoff_fastest, device, gen_gratings
-from motion_vision_networks import gen_test_emd
+from motion_vision_networks import gen_motion_vision
 
 #                   Retina          L1                                  L2                              L3                  Mi1         Mi9             Tm1             Tm9             CT1_On          CT1_Off
 cutoffs = np.array([cutoff_fastest, cutoff_fastest/10, cutoff_fastest, cutoff_fastest/5, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest])
@@ -59,11 +59,11 @@ def freq_response_emd(gains_left, gains_center, gains_right, freqs, num_cycles, 
         for c in range(num_gains):
             for r in range(num_gains):
                 if t4:
-                    model, net = gen_test_emd((7,7), k_mi1=gains_center[c], k_mi9=gains_left[l], k_ct1on=gains_right[r],
-                                              output_t4a=True, output_t4b=True)
+                    model, net = gen_motion_vision((7, 7), k_mi1=gains_center[c], k_mi9=gains_left[l], k_ct1on=gains_right[r],
+                                                   output_t4a=True, output_t4b=True)
                 else:
-                    model, net = gen_test_emd((7, 7), k_tm1=gains_center[c], k_tm9=gains_left[l], k_ct1off=gains_right[r],
-                                              output_t5a=True, output_t5b=True)
+                    model, net = gen_motion_vision((7, 7), k_tm1=gains_center[c], k_tm9=gains_left[l], k_ct1off=gains_right[r],
+                                                   output_t5a=True, output_t5b=True)
                 for f in range(num_freqs):
                     index += 1
                     print('%s Left %i/%i | Center %i/%i | Right %i/%i | Frequency %i/%i | Sample %i/%i' % (title,

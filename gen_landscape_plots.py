@@ -117,7 +117,7 @@ def create_posterior_big_plot_color(le_orig_data, filename, sample_ratio: float 
     plt.savefig(f'big_plot_{filename}.png')
 
 # print('Making big plot')
-# create_posterior_big_plot_color(df_results, "t4_mcmc")
+create_posterior_big_plot_color(df_results, "t4_mcmc")
 
 
 

@@ -124,9 +124,9 @@ def test_emd(dt, model, net, stim, interval):
     #          'a_peak':      a_peak,
     #          'b_peak':      b_peak}
 
-    # vel = convert_interval_to_deg_vel(interval, dt)
+    # vel_index = convert_interval_to_deg_vel(interval, dt)
     # param_string = '_%i_%i_%i_%i_%i' % (cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv)
-    # filename = dir + str(int(vel)) + '_trial' + param_string
+    # filename = dir + str(int(vel_index)) + '_trial' + param_string
     # save_data(trial, filename)
 
     return a_peak, b_peak, ratio

@@ -96,9 +96,9 @@ def test_emd(dt, model, net, stim, interval):
     #          'a_peak':      a_peak,
     #          'b_peak':      b_peak}
 
-    # vel = convert_interval_to_deg_vel(interval, dt)
+    # vel_index = convert_interval_to_deg_vel(interval, dt)
     # param_string = '_%i_%i_%i_%i_%i' % (cutoff_fast, ratio_low, cutoff_ct1, cutoff_mi9, c_inv)
-    # filename = dir + str(int(vel)) + '_trial' + param_string
+    # filename = dir + str(int(vel_index)) + '_trial' + param_string
     # save_data(trial, filename)
 
     return a_peak, b_peak, ratio
@@ -107,7 +107,10 @@ def freq_response_emd(vels, num_intervals, stim, cutoff_fast, ratio_low, cutoff_
     #                   Retina          L1 low              L1 High         L3              Mi1     Mi9          CT1 On          T4     Div gain
     params = np.array([cutoff_fast, cutoff_fast/ratio_low, cutoff_fast, cutoff_fast, cutoff_fast, cutoff_mi9, cutoff_ct1, cutoff_fast, 1/c_inv])   # Good guess
     # print(params)
-    dt = min(calc_cap_from_cutoff(cutoff_fast) / 10, 0.1)
+    # dt = min(calc_cap_from_cutoff(cutoff_fast) / 10, 0.1)
+    fast = max(cutoff_fast, cutoff_ct1, cutoff_mi9)
+    dt = min(calc_cap_from_cutoff(fast) / 10, 0.1)
+    print(dt)
     intervals = convert_deg_vel_to_interval(vels, dt)
 
     model, net = gen_single_emd_on(dt, params)

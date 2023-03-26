@@ -146,12 +146,14 @@ def add_scaled_bandpass_filter(net: Network, cutoff_lower, cutoff_higher, k, inv
 c_fastest = calc_cap_from_cutoff(cutoff_fastest)
 dt = c_fastest/10
 
-def gen_gratings(wavelength, angle, vel, dt, num_steps, fov=160, res=5):
+def gen_gratings(wavelength, angle, vel, dt, num_steps, fov=160, res=5, use_torch=False):
     # Generate meshgrid
     x = np.arange(0, fov, res)
     x_rad = np.deg2rad(x)
     X, Y = np.meshgrid(x_rad, x_rad)
     Y = np.flipud(Y)
+    layer_size = len(x_rad) * len(x_rad)
+    gratings = np.zeros([num_steps, layer_size])
 
     wavelength_rad = np.deg2rad(wavelength)
     angle_rad = np.deg2rad(angle)
@@ -160,13 +162,17 @@ def gen_gratings(wavelength, angle, vel, dt, num_steps, fov=160, res=5):
     disp = vel * dt_s
     disp_rad = np.deg2rad(disp)
 
-    for i in range(num_steps):
-        grating = 0.5 * np.sin(2 * np.pi * (X * np.cos(angle_rad) + Y * np.sin(angle_rad)) / wavelength_rad + i*disp_rad) + 0.5
+    for i in tqdm(range(num_steps), leave=False):
+        grating = 0.5 * np.sin(2 * np.pi * (X * np.cos(angle_rad) + Y * np.sin(angle_rad)) / wavelength_rad - i*disp_rad) + 0.5
         grating_flat = grating.flatten()
-        if i == 0:
-            gratings = np.copy(grating_flat)
-        else:
-            gratings = np.vstack((gratings, grating_flat))
+        # if i == 0:
+        #     gratings = np.copy(grating_flat)
+        # else:
+        #     gratings = np.vstack((gratings, grating_flat))
+        gratings[i,:] = grating_flat
+
+    if use_torch:
+        gratings = torch.Tensor(gratings)
 
     return gratings
 

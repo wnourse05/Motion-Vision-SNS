@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 
 from utilities import cutoff_fastest, device, gen_gratings, calc_cap_from_cutoff
-from motion_vision_networks import gen_test_emd
+from motion_vision_networks import gen_motion_vision
 from sns_toolbox.renderer import render
 
 #                   Retina          L1                                  L2                              L3                  Mi1         Mi9             Tm1             Tm9             CT1_On          CT1_Off
@@ -113,11 +113,11 @@ def test_all_emd(model, net, freq, num_cycles, neuron):
     plt.suptitle(neuron + ': ' + str(freq)+' Hz')
 
 
-model_t4, net_t4 = gen_test_emd(dt, (7,7), output_retina=True, output_t4a=True, output_t4b=True, output_t4c=True, output_t4d=True)
-model_t5, net_t5 = gen_test_emd(dt, (7,7), output_retina=True, output_t5a=True, output_t5b=True, output_t5c=True, output_t5d=True)
+model_t4, net_t4 = gen_motion_vision(dt, (7, 7), output_retina=True, output_t4a=True, output_t4b=True, output_t4c=True, output_t4d=True)
+model_t5, net_t5 = gen_motion_vision(dt, (7, 7), output_retina=True, output_t5a=True, output_t5b=True, output_t5c=True, output_t5d=True)
 
-model_t4_all, net_t4_all = gen_test_emd(dt, (7,7), output_mi1=True, output_mi9=True, output_ct1on=True, output_t4a=True)
-model_t5_all, net_t5_all = gen_test_emd(dt, (7,7), output_tm1=True, output_tm9=True, output_ct1off=True, output_t5a=True)
+model_t4_all, net_t4_all = gen_motion_vision(dt, (7, 7), output_mi1=True, output_mi9=True, output_ct1on=True, output_t4a=True)
+model_t5_all, net_t5_all = gen_motion_vision(dt, (7, 7), output_tm1=True, output_tm9=True, output_ct1off=True, output_t5a=True)
 
 # shape = [7,7]
 # freq = 100    # Hz

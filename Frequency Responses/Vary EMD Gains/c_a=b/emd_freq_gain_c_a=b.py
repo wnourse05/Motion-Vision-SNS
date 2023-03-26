@@ -3,7 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 
 from utilities import cutoff_fastest, device, gen_gratings
-from motion_vision_networks import gen_test_emd
+from motion_vision_networks import gen_motion_vision
 
 #                   Retina          L1                                  L2                              L3                  Mi1         Mi9             Tm1             Tm9             CT1_On          CT1_Off
 cutoffs = np.array([cutoff_fastest, cutoff_fastest/10, cutoff_fastest, cutoff_fastest/5, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest])
@@ -58,11 +58,11 @@ def freq_response_emd(gain_left, gain_center, gains_right, freqs, num_cycles, t4
     for g in range(num_gains):
         print('     Gain %i/%i'%(g+1, num_gains))
         if t4:
-            model, net = gen_test_emd((7,7), k_mi1=gain_center, k_mi9=gain_left, k_ct1on=gains_right[g],
-                                      output_t4a=True, output_t4b=True)
+            model, net = gen_motion_vision((7, 7), k_mi1=gain_center, k_mi9=gain_left, k_ct1on=gains_right[g],
+                                           output_t4a=True, output_t4b=True)
         else:
-            model, net = gen_test_emd((7, 7), k_tm1=gain_center, k_tm9=gain_left, k_ct1off=gains_right[g],
-                                      output_t5a=True, output_t5b=True)
+            model, net = gen_motion_vision((7, 7), k_tm1=gain_center, k_tm9=gain_left, k_ct1off=gains_right[g],
+                                           output_t5a=True, output_t5b=True)
         for i in range(num_freqs):
             print('          Sample %i/%i: %f Hz'%(i+1, num_freqs, freqs[i]))
             a_peaks[i], b_peaks[i], ratios[i] = test_emd(model, net, freqs[i], num_cycles, invert=invert)
@@ -84,8 +84,8 @@ def freq_response_emd(gain_left, gain_center, gains_right, freqs, num_cycles, t4
     plt.legend()
     plt.suptitle(title +': a=b=' + str(gain_center))
 
-model_t4, net_t4 = gen_test_emd((7,7), output_t4a=True, output_t4b=True)
-model_t5, net_t5 = gen_test_emd((7,7), output_t5a=True, output_t5b=True)
+model_t4, net_t4 = gen_motion_vision((7, 7), output_t4a=True, output_t4b=True)
+model_t5, net_t5 = gen_motion_vision((7, 7), output_t5a=True, output_t5b=True)
 
 freqs = np.linspace(10,500, num=10)
 gains = np.linspace(0.01,0.5,num=5)

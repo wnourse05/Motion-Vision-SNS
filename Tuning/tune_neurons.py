@@ -27,7 +27,7 @@ def tune_neurons(cutoffs, mode, debug=False, save=True):
         cutoff_retina, cutoff_l2_low, cutoff_l2_high, cutoff_l3, cutoff_tm1, cutoff_tm9, cutoff_ct1_off = cutoffs
     else:
         cutoff_retina, cutoff_l1_low, cutoff_l1_high, cutoff_l2_low, cutoff_l2_high, cutoff_l3, cutoff_mi1, cutoff_mi9,\
-            cutoff_tm1, cutoff_tm9, cutoff_ct1_on, cutoff_ct1_off = cutoffs
+            cutoff_tm1, cutoff_tm9, cutoff_ct1_on, cutoff_ct1_off, cutoff_t4, cutoff_t5 = cutoffs
 
     if debug:
         print('Tuning Retina')

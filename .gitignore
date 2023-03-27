@@ -132,6 +132,6 @@ dmypy.json
 .idea/workspace.xml
 
 Data/
-Data_small/
+Data/
 Stimuli/
-Stimuli_small/
+Stimuli/

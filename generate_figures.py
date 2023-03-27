@@ -6,6 +6,7 @@ import seaborn as sea
 from utilities import load_data, h5_to_dataframe
 import numpy as np
 import colorsys
+import pandas as pd
 
 """
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -14,7 +15,7 @@ GLOBAL STYLE
 def set_style():
     sea.set_theme(context='notebook', style='darkgrid', palette='colorblind')
 
-def scale_lightness(color, num, max_brightness=1.0):
+def scale_lightness(color, num, max_brightness=0.9):
     try:
         c = mc.cnames[color]
     except:
@@ -31,7 +32,7 @@ def scale_lightness(color, num, max_brightness=1.0):
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Best EMD Results
 """
-def plot_best_emd_results(best_data, num_best, name, color, a=False, b=True, ratio=False, goal=True, legend=True, filetype=None, log=True, max_brightness=0.9):
+def plot_best_emd_results(best_data, num_best, name, color, a=False, b=True, ratio=True, goal=True, legend=True, filetype=None, log=True, max_brightness=0.9):
     print('Best %i %s Responses'%(num_best, name))
     vels = best_data['vels']
     colors = scale_lightness(color, num_best, max_brightness=max_brightness)
@@ -160,6 +161,14 @@ def mcmc_correlogram(h5, toml, params_used, name, style=None, cmap=None, filetyp
         cmap = 'magma'
     the_cmap = sea.color_palette(cmap, as_cmap=True)
     norm = mc.LogNorm(np.min(df_results['neglogpost']), np.max(df_results['neglogpost']))
+
+    fig, ax = plt.subplots(figsize=(6, 1))
+    fig.subplots_adjust(bottom=0.5)
+    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=the_cmap),
+                 cax=ax, orientation='horizontal')
+    plt.tick_params(axis='x', which='minor', bottom=False)
+    plt.savefig(f'Figures/{name}_mcmc_colorbar.svg')
+
     sea.set_context('paper', rc={"font.size": 48, "axes.titlesize": 48, "axes.labelsize": 48, "xtick.labelsize": 48,
                                  "ytick.labelsize": 48})
     sea.set_style(style)
@@ -171,15 +180,21 @@ def mcmc_correlogram(h5, toml, params_used, name, style=None, cmap=None, filetyp
     g = sea.PairGrid(data=le_data, height=10, vars=cols_to_use)
     g.map_offdiag(sea.scatterplot, alpha=alpha, hue=nlp, hue_norm=norm, palette=the_cmap,
                   legend=False)
-    # g.map_lower(sns.scatterplot, alpha=alpha, hue=nlp, hue_norm=norm, palette=the_cmap,
-    #             legend=False)  # alpha=0.002, hue_norm=LogNorm(vmin=nlp.min(), vmax=nlp.max()),
-    # g.map_upper(sns.kdeplot, fill=True, thresh=0)#, hue=nlp, hue_norm=norm, palette=the_cmap)
-    # g.ax_joint.figure.colorbar(sm, shrink=10.0)
     g.map_diag(sea.histplot, kde=True)
+
+    best = le_data.iloc[-1]
+    best_df = pd.DataFrame(np.reshape(best.values, (1, 6)), columns=best.index.values)
+    blue = sea.color_palette('colorblind')[0]
+    markersize = mpl.rcParams['lines.markersize'] ** 2
+    cols_to_use = [col for col in best_df.columns if col != 'neglogpost']
+    g.data = best_df
+    g.map_offdiag(sea.scatterplot, alpha=1, color=blue, marker='*', s=100*markersize, legend=False)
 
     if filetype is None:
         filetype = 'png'
     plt.savefig(f'Figures/{name}_mcmc.{filetype}')
+
+
 
 """
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -195,6 +210,8 @@ def plot_sinusoids(wavelength, angles, fov, res, title=True, filetype=None):
         wavelength_rad = np.deg2rad(wavelength)
         angle_rad = np.deg2rad(angles[i])
         grating = 0.5 * np.sin(2 * np.pi * (X * np.cos(angle_rad) + Y * np.sin(angle_rad)) / wavelength_rad) + 0.5
+        grating[grating > 0.5] = 1.0
+        grating[grating <= 0.5] = 0.0
         if title:
             plt.title('%i' % (angles[i]))
         if filetype is None:
@@ -205,6 +222,55 @@ def plot_sinusoids(wavelength, angles, fov, res, title=True, filetype=None):
         plt.axis('off')
 
         plt.savefig('Figures/grating_%i.%s'%(angles[i],filetype))
+
+"""
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Radar Plots
+"""
+def radar(vels, angles, key, title, color, legend=False):
+    colors = scale_lightness(color, len(vels))
+    # plt.figure()
+    # ax = plt.subplot(111, polar=True)
+    angles = np.deg2rad(angles)
+    angles = [n for n in angles]
+    angles.append(0)
+    for i in range(len(vels)):
+        peaks = np.zeros(len(angles))
+        for j in range(len(angles)-1):
+            data = load_data('Data/peaks_%i_%i.pc'%(i,j))
+            peaks[j] = data['%speak'%key].item()
+        peaks[-1] = peaks[0]
+        # print(peaks)
+
+        plt.plot(angles, peaks, color=colors[i], label='%i'%vels[i])
+        plt.title(title)
+    if legend:
+        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, mode="expand", borderaxespad=0.)
+
+def total_radar(colors):
+    vels = np.linspace(10, 180, num=4)
+    angular_res = 30
+    angles = np.arange(0, 360, angular_res)
+    plt.figure()
+    plt.subplot(2, 4, 1, polar=True)
+    radar(vels, angles, 't4a', 'T4a', colors['t4'])
+    plt.subplot(2, 4, 2, polar=True)
+    radar(vels, angles, 't4b', 'T4b', colors['t4'])
+    plt.subplot(2, 4, 3, polar=True)
+    radar(vels, angles, 't5a', 'T5a', colors['t5'])
+    plt.subplot(2, 4, 4, polar=True)
+    radar(vels, angles, 't5b', 'T5b', colors['t5'])
+    plt.subplot(2, 4, 5, polar=True)
+    radar(vels, angles, 't4c', 'T4c', colors['t4'])
+    plt.subplot(2, 4, 6, polar=True)
+    radar(vels, angles, 't4d', 'T4d', colors['t4'])
+    plt.subplot(2, 4, 7, polar=True)
+    radar(vels, angles, 't5c', 'T5c', colors['t5'])
+    plt.subplot(2, 4, 8, polar=True)
+    radar(vels, angles, 't5d', 'T5d', colors['t5'])
+    plt.tight_layout()
+    plt.savefig('Figures/radar.svg')
+
 
 """
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -232,18 +298,27 @@ def main():
     # plot_best_emd_results(t4_best, 10, 'T4', color=colors['t4'])
     # plot_best_emd_results(t5_best, 5, 'T5', color=colors['t5'])
     # plot_best_emd_results(t5_best, 10, 'T5', color=colors['t5'])
+    #
+    plot_best_emd_parameters(t4_best, 5, 'T4', ['Hz', '', 'Hz', 'Hz', ''])
+    plot_best_emd_parameters(t4_best, 10, 'T4', ['Hz', '', 'Hz', 'Hz', ''])
+    plot_best_emd_parameters(t5_best, 5, 'T5', ['Hz', '', 'Hz', 'uS', 'mV'])
+    plot_best_emd_parameters(t5_best, 10, 'T5', ['Hz', '', 'Hz', 'uS', 'mV'])
+    #
+    # dim = 7*4
+    # fov_res = 5
+    # fov = fov_res*dim
+    # wavelength = fov/2
+    # angles = np.arange(0,360,45)
+    # plot_sinusoids(wavelength, angles, fov, fov_res, title=False)
 
-    # plot_best_emd_parameters(t4_best, 5, 'T4', ['Hz', '', 'Hz', 'Hz', ''])
-    # plot_best_emd_parameters(t4_best, 10, 'T4', ['Hz', '', 'Hz', 'Hz', ''])
-    # plot_best_emd_parameters(t5_best, 5, 'T5', ['Hz', '', 'Hz', 'uS', 'mV'])
-    # plot_best_emd_parameters(t5_best, 10, 'T5', ['Hz', '', 'Hz', 'uS', 'mV'])
-
-    dim = 7*4
-    fov_res = 5
-    fov = fov_res*dim
-    wavelength = fov/4
-    angles = np.arange(0,360,45)
-    plot_sinusoids(wavelength, angles, fov, fov_res, title=False)
+    vels = np.linspace(10, 180, num=4)
+    angular_res = 30
+    angles = np.arange(0, 360, angular_res)
+    # radar(vels, angles, 't4a', 'T4a', colors['t4'])
+    # radar(vels, angles, 't4b', 'T4b', colors['t4'])
+    # radar(vels, angles, 't4c', 'T4c', colors['t4'])
+    # radar(vels, angles, 't4d', 'T4d', colors['t4'])
+    total_radar(colors)
 
     # params_used = np.array([0,1,2,3,4])
     # t4_h5 = '2023-Mar-24_07-15.t4a.h5'

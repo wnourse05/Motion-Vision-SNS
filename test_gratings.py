@@ -12,7 +12,7 @@ shape = (7,7)
 fig = plt.figure()
 grid = GridSpec(num_steps, len(angles), figure=fig)
 for i in range(len(angles)):
-    gratings = gen_gratings(wavelength, angles[i], vel, dt, num_steps, use_torch=True, fov=35)
+    gratings = gen_gratings(wavelength, angles[i], vel, dt, num_steps, use_torch=True, fov=35, square=True)
     for j in range(num_steps):
         plt.subplot(grid[j, i])
         if j == 0:

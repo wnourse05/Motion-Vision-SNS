@@ -41,14 +41,14 @@ def run_net(dt, model, net, stim, shape, device, vel_index, angle_index):
     t5d = data[17*flat_size:, :]
 
     del data
-    t4_a_peak = torch.max(t4a[int(flat_size/2):])
-    t4_b_peak = torch.max(t4b[int(flat_size/2):])
-    t4_c_peak = torch.max(t4c[int(flat_size/2):])
-    t4_d_peak = torch.max(t4d[int(flat_size/2):])
-    t5_a_peak = torch.max(t5a[int(flat_size/2):])
-    t5_b_peak = torch.max(t5b[int(flat_size/2):])
-    t5_c_peak = torch.max(t5c[int(flat_size/2):])
-    t5_d_peak = torch.max(t5d[int(flat_size/2):])
+    t4_a_peak = torch.max(t4a[24,:])
+    t4_b_peak = torch.max(t4b[24,:])
+    t4_c_peak = torch.max(t4c[24,:])
+    t4_d_peak = torch.max(t4d[24,:])
+    t5_a_peak = torch.max(t5a[24,:])
+    t5_b_peak = torch.max(t5b[24,:])
+    t5_c_peak = torch.max(t5c[24,:])
+    t5_d_peak = torch.max(t5d[24,:])
 
     sim_params = {'velindex': vel_index,
                   'angleindex': angle_index,
@@ -85,13 +85,13 @@ def run_net(dt, model, net, stim, shape, device, vel_index, angle_index):
     save_data(medulla_on, 'Data/medulla_on_%i_%i.pc' % (vel_index, angle_index))
     save_data(medulla_off, 'Data/medulla_off_%i_%i.pc' % (vel_index, angle_index))
     save_data(emd_on, 'Data/emd_on_%i_%i.pc' % (vel_index, angle_index))
-    save_data(emd_off, 'Data/emd_on_%i_%i.pc' % (vel_index, angle_index))
+    save_data(emd_off, 'Data/emd_off_%i_%i.pc' % (vel_index, angle_index))
     save_data(peaks, 'Data/peaks_%i_%i.pc' % (vel_index, angle_index))
 
 print('Loading Params')
 params = load_data('params_net_10_180.pc')
-num_intervals = 20
-vels = np.linspace(10, 360, num=num_intervals)
+num_intervals = 4
+vels = np.linspace(10, 180, num=num_intervals)
 angular_res = 30
 angles = np.arange(0, 360, angular_res)
 dt = params['dt']

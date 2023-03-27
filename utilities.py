@@ -146,7 +146,7 @@ def add_scaled_bandpass_filter(net: Network, cutoff_lower, cutoff_higher, k, inv
 c_fastest = calc_cap_from_cutoff(cutoff_fastest)
 dt = c_fastest/10
 
-def gen_gratings(wavelength, angle, vel, dt, num_steps, fov=160, res=5, use_torch=False):
+def gen_gratings(wavelength, angle, vel, dt, num_steps, fov=160, res=5, use_torch=False, square=True):
     # Generate meshgrid
     x = np.arange(0, fov, res)
     x_rad = np.deg2rad(x)
@@ -164,6 +164,9 @@ def gen_gratings(wavelength, angle, vel, dt, num_steps, fov=160, res=5, use_torc
 
     for i in tqdm(range(num_steps), leave=False):
         grating = 0.5 * np.sin(2 * np.pi * (X * np.cos(angle_rad) + Y * np.sin(angle_rad)) / wavelength_rad - i*disp_rad) + 0.5
+        if square:
+            grating[grating > 0.5] = 1.0
+            grating[grating <= 0.5] = 0.0
         grating_flat = grating.flatten()
         # if i == 0:
         #     gratings = np.copy(grating_flat)

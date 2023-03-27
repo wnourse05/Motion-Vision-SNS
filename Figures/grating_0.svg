@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2023-03-26T11:29:12.670218</dc:date>
+    <dc:date>2023-03-26T14:52:19.914642</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -29,14 +29,14 @@ z
 " style="fill: #ffffff"/>
   </g>
   <g id="axes_1">
-   <g clip-path="url(#pa332bdb35a)">
+   <g clip-path="url(#p21dae90407)">
     <image xlink:href="data:image/png;base64,
-iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAQ0lEQVR4nO3NMRUAMQgE0X1xgSJkgSwUYWNPwTUpUs20U3xVlXfXtj0zzkxLckT49nX37zt6HCAgICAgICAgICDgiz5nekXuJWneHgAAAABJRU5ErkJggg==" id="image1fa9b36e8d" transform="matrix(9.535714 0 0 9.535714 103.104 40.584)" style="image-rendering:crisp-edges;image-rendering:pixelated" width="28" height="28"/>
+iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAANUlEQVR4nO3NsQ0AMAwCQfD+O5MJcOdU/y1CZ0lJopbturXf9pm6HAUICAgICAgICAgI+KMHEpEHN/9TP5IAAAAASUVORK5CYII=" id="image40afba6aa6" transform="matrix(9.535714 0 0 9.535714 103.104 40.584)" style="image-rendering:crisp-edges;image-rendering:pixelated" width="28" height="28"/>
    </g>
   </g>
  </g>
  <defs>
-  <clipPath id="pa332bdb35a">
+  <clipPath id="p21dae90407">
    <rect x="103.104" y="41.472" width="266.112" height="266.112"/>
   </clipPath>
  </defs>

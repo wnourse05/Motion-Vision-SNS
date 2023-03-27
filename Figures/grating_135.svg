@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2023-03-26T11:29:12.932745</dc:date>
+    <dc:date>2023-03-26T14:52:20.191125</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -29,14 +29,14 @@ z
 " style="fill: #ffffff"/>
   </g>
   <g id="axes_1">
-   <g clip-path="url(#pfa6a6d23b1)">
+   <g clip-path="url(#pa1d6ea0306)">
     <image xlink:href="data:image/png;base64,
-iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAABBUlEQVR4nL3NLQrCAACG4U83cchuIciCQRAMwyJ4G4NhwWARLAaD4HGEBcEwEAzCQNgtRBz+vd7iey7wSBLdbpfZbMbhcOB+vwNwu93Y7XZMJhM6nQ6NRoMkSciyjOPxyPP55Pv9cr1e2Ww2pGlKu90mCAIGgwHL5ZKiKHi9Xrzfb87nM6vVCjmz4XCInFkYhsiZtVot5MxGoxFyZuv1Gjmzy+WCnNnn80HOrK5r5MxOpxNyZovFAjmzfr+PnFmz2UTOLIoi5MzG4zFyZtvtFjmzsiyRM/v9fsiZPR4P5MzyPEfObD6fI2fW6/WQNZOQM4vjGDmz6XSKnNl+v0fOrKoq5MwA/gjvoFArruFCAAAAAElFTkSuQmCC" id="image3c512b7e27" transform="matrix(9.535714 0 0 9.535714 103.104 40.584)" style="image-rendering:crisp-edges;image-rendering:pixelated" width="28" height="28"/>
+iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAApklEQVR4nL3W3Q6AIAiG4RfX/d8ynTTXDypN4Dut8aSJQ1RVmUREZo97FmV6WiUmImMwA4PBCrMwE8zEPmA29gArMIAjGlvVatErW+WIwrwfPm18L+aNqs7B3QNi1RqCGdgQzMJMMBP7gNnYA6zA4OrDyD5b1WqVGDga35uQEQP2/9m71vZM8/ewmZd36YjhTciIYb0QicFtS6tGjFaJAQjgqhJ19Z2euHRCq2b+AQAAAABJRU5ErkJggg==" id="image7c0b6138bb" transform="matrix(9.535714 0 0 9.535714 103.104 40.584)" style="image-rendering:crisp-edges;image-rendering:pixelated" width="28" height="28"/>
    </g>
   </g>
  </g>
  <defs>
-  <clipPath id="pfa6a6d23b1">
+  <clipPath id="pa1d6ea0306">
    <rect x="103.104" y="41.472" width="266.112" height="266.112"/>
   </clipPath>
  </defs>

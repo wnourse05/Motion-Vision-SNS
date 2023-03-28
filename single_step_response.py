@@ -1,112 +1,49 @@
 import numpy as np
-import torch
-import matplotlib.pyplot as plt
-import matplotlib
 
-from utilities import dt, cutoff_fastest
+from utilities import load_data, save_data
 from motion_vision_networks import gen_single_column
+from sns_toolbox.renderer import render
 
-#                   Retina          L1                                  L2                              L3                  Mi1         Mi9             Tm1             Tm9             CT1_On          CT1_Off
-cutoffs = np.array([cutoff_fastest, cutoff_fastest/10, cutoff_fastest, cutoff_fastest/5, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest, cutoff_fastest])
+def get_step_response(t, model, data, inputs, filename, neg=True):
+    model.reset()
+    found = False
+    for i in range(len(t)):
+        if neg and inputs[i,:] == 0.0 and not found:
+            model.V_last[6] = 0.0
+            model.V[6] = 0.0 # TODO: Fix this
+            found = True
+        data[i, :] = model(inputs[i, :])
+    data = data.transpose()
 
-model, net = gen_single_column()
+    inp = data[0,:]
+    bp = data[1,:]
+    lp = data[2,:]
+    e = data[3,:]
+    d_on = data[4,:]
+    d_off = data[5,:]
+    s_on = data[6,:]
+    s_off = data[7,:]
 
-t = np.arange(0,50, dt)
-inputs = torch.ones([len(t), net.get_num_inputs()])
-data = np.zeros([len(t), net.get_num_outputs_actual()])
+    output = {'t': t, 'in': inp, 'bp': bp, 'lp': lp, 'e': e, 'd_on': d_on, 'd_off': d_off, 's_on': s_on, 's_off': s_off, 'input': inputs}
 
+    save_data(output, 'Step Responses/%s.pc'%filename)
+
+params = load_data('params_net_20230327.pc')
+
+model, net = gen_single_column(params)
+# render(net)
+
+dt = params['dt']
+t = np.arange(0,100, dt)
+
+inputs_pos = np.ones([len(t), net.get_num_inputs()])
+inputs_neg = np.ones([len(t), net.get_num_inputs()])
 for i in range(len(t)):
-    data[i,:] = model(inputs[i,:])
-data = data.transpose()
+    if t[i] > 50:
+        inputs_neg[i] = 0.0
 
-"""
-########################################################################################################################
-PLOTTING
-"""
-group = True
+data_pos = np.zeros([len(t), net.get_num_outputs_actual()])
+data_neg = np.zeros([len(t), net.get_num_outputs_actual()])
 
-if group:
-    plt.figure()
-    grid = matplotlib.gridspec.GridSpec(4, 4)
-
-if group:
-    plt.subplot(grid[0,0])
-else:
-    plt.figure()
-plt.plot(t, data[:][0])
-plt.ylim([-0.1,1.1])
-plt.title('Retina')
-
-if group:
-    plt.subplot(grid[1,0])
-else:
-    plt.figure()
-plt.plot(t, data[:][1])
-plt.ylim([-0.1,1.1])
-plt.title('L1')
-
-if group:
-    plt.subplot(grid[1,1])
-else:
-    plt.figure()
-plt.plot(t, data[:][2])
-plt.ylim([-0.1,1.1])
-plt.title('L2')
-
-if group:
-    plt.subplot(grid[1,2])
-else:
-    plt.figure()
-plt.plot(t, data[:][3])
-plt.ylim([-0.1,1.1])
-plt.title('L3')
-
-if group:
-    plt.subplot(grid[2,0])
-else:
-    plt.figure()
-plt.plot(t, data[:][4])
-plt.ylim([-0.1,1.1])
-plt.title('Mi1')
-
-if group:
-    plt.subplot(grid[2,1])
-else:
-    plt.figure()
-plt.plot(t, data[:][5])
-plt.ylim([-0.1,1.1])
-plt.title('Mi9')
-
-if group:
-    plt.subplot(grid[2,2])
-else:
-    plt.figure()
-plt.plot(t, data[:][6])
-plt.ylim([-0.1,1.1])
-plt.title('Tm1')
-
-if group:
-    plt.subplot(grid[2,3])
-else:
-    plt.figure()
-plt.plot(t, data[:][7])
-plt.ylim([-0.1,1.1])
-plt.title('Tm9')
-
-if group:
-    plt.subplot(grid[3,0])
-else:
-    plt.figure()
-plt.plot(t, data[:][8])
-plt.ylim([-0.1,1.1])
-plt.title('CT1_On')
-
-if group:
-    plt.subplot(grid[3,1])
-else:
-    plt.figure()
-plt.plot(t, data[:][9])
-plt.ylim([-0.1,1.1])
-plt.title('CT1_Off')
-
-plt.show()
+get_step_response(t, model, data_pos, inputs_pos, 'positive', neg=False)
+get_step_response(t, model, data_neg, inputs_neg, 'negative')

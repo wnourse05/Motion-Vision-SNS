@@ -10,6 +10,7 @@ import load_conf as lc
 from pathlib import Path
 import pandas as pd
 import h5py
+import scipy.signal as signal
 
 from sns_toolbox.neurons import NonSpikingNeuron
 from sns_toolbox.connections import NonSpikingSynapse, NonSpikingMatrixConnection
@@ -149,24 +150,47 @@ dt = c_fastest/10
 def gen_gratings(wavelength, angle, vel, dt, num_steps, fov=160, res=5, use_torch=False, square=True):
     # Generate meshgrid
     x = np.arange(0, fov, res)
-    x_rad = np.deg2rad(x)
-    X, Y = np.meshgrid(x_rad, x_rad)
+    # x_rad = x#np.deg2rad(x)
+    X, Y = np.meshgrid(x, x)
     Y = np.flipud(Y)
-    layer_size = len(x_rad) * len(x_rad)
+    layer_size = len(x) * len(x)
     gratings = np.zeros([num_steps, layer_size])
 
-    wavelength_rad = np.deg2rad(wavelength)
+    # wavelength_rad = np.deg2rad(wavelength)
     angle_rad = np.deg2rad(angle)
+    def x_factor(angle):
+        if angle == 90 or angle == 270:
+            return 0
+        elif angle == 0:
+            return 1
+        elif angle == 180:
+            return -1
+        else:
+            return np.sin(angle_rad)
+
+    def y_factor(angle):
+        if angle == 0 or angle == 180:
+            return 0
+        elif angle == 90:
+            return 1
+        elif angle == 270:
+            return -1
+        else:
+            return np.sin(angle_rad)
 
     dt_s = dt / 1000
-    disp = vel * dt_s
-    disp_rad = np.deg2rad(disp)
+    disp = np.deg2rad(vel) * dt_s
+    # disp_rad = np.deg2rad(disp)
 
     for i in tqdm(range(num_steps), leave=False):
-        grating = 0.5 * np.sin(2 * np.pi * (X * np.cos(angle_rad) + Y * np.sin(angle_rad)) / wavelength_rad - i*disp_rad) + 0.5
         if square:
-            grating[grating > 0.5] = 1.0
-            grating[grating <= 0.5] = 0.0
+            grating = 0.5 * signal.square(
+                2 * np.pi * (X * x_factor(angle) + Y * y_factor(angle)) /wavelength- i * disp) + 0.5
+        else:
+            grating = 0.5 * np.sin(2 * np.pi * (X * x_factor(angle) + Y * y_factor(angle)) / wavelength - i*disp) + 0.5
+        # if square:
+        #     grating[grating > 0.5] = 1.0
+        #     grating[grating <= 0.5] = 0.0
         grating_flat = grating.flatten()
         # if i == 0:
         #     gratings = np.copy(grating_flat)

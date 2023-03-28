@@ -1,4 +1,4 @@
-from Tuning.tune_neurons import tune_neurons
+from Tuning.tune_neurons_old import tune_neurons
 from utilities import save_data, h5_to_dataframe, calc_cap_from_cutoff
 import numpy as np
 

@@ -131,7 +131,4 @@ dmypy.json
 .idea/
 .idea/workspace.xml
 
-Data/
-Data/
-Stimuli/
-Stimuli/
+Neuron Data/

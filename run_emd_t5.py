@@ -82,9 +82,15 @@ def test_emd(dt, model, net, stim, interval):
         ct1_r, stim_l, stim_c, stim_r, t5_a, t5_b
 
 def plot_emd(dt, interval, stim, params, plot=False, debug=False):
-
-    #                        Retina          L2 low          L2 High      L3         Tm1     Tm9          CT1 Off        T4     g           reversal
-    params_full = np.array([params[0], params[0]/params[1], params[0], params[0], params[0], params[0], params[2], params[0], params[3], params[4]])   # Good guess
+    cutoff_fast = params[0]
+    cutoff_l2 = params[1]
+    cutoff_tm1 = params[2]
+    cutoff_tm9 = params[3]
+    cutoff_ct1 = params[4]
+    g = params[5]
+    rev = params[6]
+    #                        Retina          L2 low   L2 High      L3         Tm1         Tm9          CT1 Off        T4     g  reversal
+    params_full = np.array([cutoff_fast, cutoff_l2, cutoff_fast, cutoff_fast, cutoff_tm1, cutoff_tm9, cutoff_ct1, cutoff_fast, g, rev])   # Good guess
 
     model, net = gen_single_emd_off(dt, params_full)
     # stim, y = gen_gratings((1,3), freq, 'lr', 5, dt, square=True, device=device)
@@ -153,9 +159,9 @@ def convert_interval_to_deg_vel(interval, dt):
     return vel
 
 def t5_freq_response(dt, vels, stim, params, plot=False):
-    a_peaks = np.zeros_like(vels)
-    b_peaks = np.zeros_like(vels)
-    ratios = np.zeros_like(vels)
+    a_peaks = np.zeros(len(vels))
+    b_peaks = np.zeros_like(a_peaks)
+    ratios = np.zeros_like(a_peaks)
     if plot:
         fig = plt.figure()
     for i in range(len(vels)):
@@ -164,7 +170,8 @@ def t5_freq_response(dt, vels, stim, params, plot=False):
             plt.subplot(len(vels),1,i+1)
         interval = convert_deg_vel_to_interval(vels[i], dt)
         # print(interval)
-        a_peaks[i], b_peaks[i], ratios[i] = plot_emd(dt, interval, stim, params, plot=plot)
+        a_peaks[i], b_peaks[i], ratios[i] = plot_emd(dt, interval, stim, params, plot=plot, debug=False)
+    print(b_peaks)
     if plot:
         fig1 = plt.figure()
         # print(fig1.dpi)
@@ -172,26 +179,46 @@ def t5_freq_response(dt, vels, stim, params, plot=False):
         plt.plot(vels, a_peaks)
         plt.plot(vels, b_peaks)
         sea.despine()
-        plt.xscale('log')
+        # plt.xscale('log')
         plt.title('B Peak')
         plt.subplot(2,1,2)
         plt.plot(vels, ratios)
         plt.title('B/A')
-        plt.xscale('log')
+        # plt.xscale('log')
         sea.despine()
 
 sea.set_theme()
 sea.set_style('ticks')
 sea.color_palette('colorblind')
-stim_off_lr = gen_stimulus(2)
+stim_off_lr = gen_stimulus(10)
 num_intervals = 4
 vels = np.linspace(10,720,num=num_intervals)
+vels = np.array([9,10,11,20,50,100,150,200,250,300,360,720])
 #
+v_slow = 10
+v_fast = 360
+wavelength = 30
+dt = 0.1
+cap_fast = 10*dt
+cutoff_fast = calc_cap_from_cutoff(cap_fast)
+cap_low = 100*wavelength/v_fast
+cutoff_low = calc_cap_from_cutoff(cap_low)
+
+cutoff_tm = 10*v_slow/wavelength
+
 dt = 0.1
 goal = np.linspace(1.0, 0.1, num=num_intervals)
 
-g_pd_t5, rev_pd_t5 = synapse_target(0.0, activity_range)
-params = [200, 10, 10, g_pd_t5, 0.0]
+# g_pd_t5, rev_pd_t5 = synapse_target(0.0, activity_range)
+g = 1/0.1 - 1
+rev = 0
+cap_mi9 = 1000/v_slow
+cutoff_mi9 = calc_cap_from_cutoff(cap_mi9)
+
+params = [cutoff_fast, cutoff_low, cutoff_fast, cutoff_mi9, cutoff_fast, g, rev]
+# params = [200, 10, 10, g_pd_t5, 0.0]
+# #                        Retina          L2 low                        L2 High      L3               Tm1                Tm9          CT1 Off        T5                g           reversal
+# params = np.array([params_mcmc[0], params_mcmc[0] / params_mcmc[1], params_mcmc[0], params_mcmc[0], params_mcmc[0], params_mcmc[0], params_mcmc[2], params_mcmc[0], params_mcmc[3], params_mcmc[4]])  # Good guess
 
 t5_freq_response(dt, vels, stim_off_lr, params, plot=True)
 # start = time.time()

@@ -11,7 +11,10 @@ import time
 def gen_stimulus(num_cycles):
     stim_on_lr = np.array([[1.0, 0.0, 0.0],
                            [1.0, 1.0, 0.0],
-                           [1.0, 1.0, 1.0]])
+                           [1.0, 1.0, 1.0],
+                           [0.0, 1.0, 1.0],
+                           [0.0, 0.0, 1.0],
+                           [0.0, 0.0, 0.0]])
     for i in range(num_cycles):
         if i == 0:
             stim_full = np.copy(stim_on_lr)
@@ -196,7 +199,7 @@ def init():
     sea.set_theme()
     sea.set_style('ticks')
     sea.color_palette('colorblind')
-    stim_on_lr = gen_stimulus(2)
+    stim_on_lr = gen_stimulus(10)
     num_intervals = 4
     vels = np.linspace(10,180,num=num_intervals)
     vels = np.array([9,10,11,20,50,100,150,200,250,300,360,720])
@@ -213,7 +216,7 @@ cutoff_fast = calc_cap_from_cutoff(cap_fast)
 cap_low = 100*wavelength/v_fast
 cutoff_low = calc_cap_from_cutoff(cap_low)
 cutoff_ct1 = cutoff_fast
-cap_mi9 = 1000/v_slow
+cap_mi9 = 1000*5/(5*v_slow)
 cutoff_mi9 = calc_cap_from_cutoff(cap_mi9)
 # cutoff_mi9 = 1
 c_inv=10

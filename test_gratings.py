@@ -4,10 +4,10 @@ from matplotlib.gridspec import GridSpec
 import numpy as np
 
 angles = np.arange(0, 360, 30)
-vel = 40
+vel = 30
 dt = 1000
 num_steps = 15
-wavelength = 35
+wavelength = 30
 shape = (7,7)
 fig = plt.figure()
 grid = GridSpec(num_steps, len(angles), figure=fig)

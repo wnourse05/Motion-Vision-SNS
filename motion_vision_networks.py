@@ -9,16 +9,23 @@ from sns_toolbox.renderer import render
 from utilities import add_lowpass_filter, activity_range, load_data, add_scaled_bandpass_filter, backend, NonSpikingOneToOneConnection, synapse_target, device, cutoff_fastest, reversal_ex, reversal_in, calc_cap_from_cutoff
 from Tuning.tune_neurons_old import tune_neurons
 
-def __gen_receptive_fields__(params, center=False):
+def __gen_receptive_fields__(params, center=False, scale=True):
     g_params = params['g']
     if center:
         g_params['outer'] = 0
         g_params['middle'] = 0
+    # elif scale is not None:
+    #     g_params['outer'] = scale*g_params['outer']
+    #     g_params['middle'] = scale*g_params['middle']
+    #     g_params['center'] = scale*g_params['center']
     g = np.array([[g_params['outer'], g_params['outer'], g_params['outer'], g_params['outer'], g_params['outer']],
                   [g_params['outer'], g_params['middle'], g_params['middle'], g_params['middle'], g_params['outer']],
                   [g_params['outer'], g_params['middle'], g_params['center'], g_params['middle'], g_params['outer']],
                   [g_params['outer'], g_params['middle'], g_params['middle'], g_params['middle'], g_params['outer']],
                   [g_params['outer'], g_params['outer'], g_params['outer'], g_params['outer'], g_params['outer']]])
+    if scale:
+        mean_g = np.mean(g)
+        g = g_params['center']/mean_g * g
     reversal_params = params['reversal']
     reversal = np.array([[reversal_params['outer'], reversal_params['outer'], reversal_params['outer'],
                           reversal_params['outer'], reversal_params['outer']],
@@ -452,7 +459,7 @@ def gen_single_emd_off(dt, params):
 
     return model, net
 
-def gen_motion_vision(params, shape, backend, device, center=False):
+def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
     """
     ####################################################################################################################
     INITIALIZE NETWORK
@@ -479,8 +486,8 @@ def gen_motion_vision(params, shape, backend, device, center=False):
     """
     params_bp = params['bp']
     params_lp = params['lp']
-    g_in_bp, reversal_in_bp, e_lo_in_bp, e_hi_in_bp = __gen_receptive_fields__(params_bp, center=center)
-    g_in_lp, reversal_in_lp, e_lo_in_lp, e_hi_in_lp = __gen_receptive_fields__(params_lp, center=center)
+    g_in_bp, reversal_in_bp, e_lo_in_bp, e_hi_in_bp = __gen_receptive_fields__(params_bp, center=center, scale=scale)
+    g_in_lp, reversal_in_lp, e_lo_in_lp, e_hi_in_lp = __gen_receptive_fields__(params_lp, center=center, scale=scale)
     synapse_in_bp = NonSpikingPatternConnection(max_conductance_kernel=g_in_bp, reversal_potential_kernel=reversal_in_bp, e_lo_kernel=e_lo_in_bp, e_hi_kernel=e_hi_in_bp)
     synapse_in_lp = NonSpikingPatternConnection(max_conductance_kernel=g_in_lp, reversal_potential_kernel=reversal_in_lp, e_lo_kernel=e_lo_in_lp, e_hi_kernel=e_hi_in_lp)
 
@@ -572,7 +579,7 @@ def gen_motion_vision(params, shape, backend, device, center=False):
     g_d_on = params_on['g']['direct']
     g_s_on = params_on['g']['suppress']
 
-    rev_e_on = params_on['reversal']['enhance']
+    rev_e_on = -0.1#params_on['reversal']['enhance']
     rev_d_on = params_on['reversal']['direct']
     rev_s_on = params_on['reversal']['suppress']
 
@@ -670,11 +677,11 @@ def gen_motion_vision(params, shape, backend, device, center=False):
 
     g_e_off = params_off['g']['enhance']
     g_d_off = params_off['g']['direct']
-    g_s_off = params_off['g']['suppress']
+    g_s_off = params_on['g']['suppress']
 
     rev_e_off = params_off['reversal']['enhance']
     rev_d_off = params_off['reversal']['direct']
-    rev_s_off = params_off['reversal']['suppress']
+    rev_s_off = params_on['reversal']['suppress']
 
     g_e_off_kernel_b = np.array([[0, 0, 0],
                                 [g_e_off, 0, 0],

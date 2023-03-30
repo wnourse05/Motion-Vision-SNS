@@ -13,7 +13,7 @@ import pandas as pd
 GLOBAL STYLE
 """
 def set_style():
-    sea.set_theme(context='notebook', style='darkgrid', palette='colorblind')
+    sea.set_theme(context='notebook', style='ticks', palette='colorblind')
 
 def scale_lightness(color, num, max_brightness=0.9):
     try:
@@ -251,24 +251,26 @@ def total_radar(colors):
     angles = [0, 45, 90, 135, 180, 225, 270, 315, 0]
     plt.figure(figsize=(2*7, 2*7*9/16))
     plt.subplot(2, 4, 1, polar=True)
-    radar(angles, 'on_a', 'On A', colors['on'])
+    radar(angles, 'on_a', r'$On_A$', colors['on'])
     plt.subplot(2, 4, 2, polar=True)
-    radar(angles, 'on_b', 'On B', colors['on'])
+    radar(angles, 'on_b', r'$On_B$', colors['on'])
     plt.subplot(2, 4, 3, polar=True)
-    radar(angles, 'off_a', 'T5a', colors['off'])
+    radar(angles, 'off_a', r'$Off_A$', colors['off'])
     plt.subplot(2, 4, 4, polar=True)
-    radar(angles, 'off_b', 'T5b', colors['off'])
+    radar(angles, 'off_b', r'$Off_B$', colors['off'])
     plt.subplot(2, 4, 5, polar=True)
-    radar(angles, 'on_c', 'T4c', colors['on'])
+    radar(angles, 'on_c', r'$On_C$', colors['on'])
     plt.subplot(2, 4, 6, polar=True)
-    radar(angles, 'on_d', 'T4d', colors['on'])
+    radar(angles, 'on_d', r'$On_D$', colors['on'])
     plt.subplot(2, 4, 7, polar=True)
-    radar(angles, 'off_c', 'T5c', colors['off'])
+    radar(angles, 'off_c', r'$Off_C$', colors['off'])
     plt.subplot(2, 4, 8, polar=True)
-    radar(angles, 'off_d', 'T5d', colors['off'])
+    radar(angles, 'off_d', r'$Off_D$', colors['off'])
     plt.tight_layout()
     plt.savefig('Figures/figure_radar.svg')
     plt.savefig('Figures/figure_radar.pdf')
+
+# def resultant_radar(colors)
 
 """
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -278,12 +280,12 @@ def step_on(colors, title=True):
     data = load_data('Step Responses/positive.pc')
     if title:
         plt.title('On Pathway')
-    plt.plot(data['t'][:int(len(data['t'])/2)], data['in'][:int(len(data['t'])/2)], color=colors['in'], label='In')
-    plt.plot(data['t'][:int(len(data['t'])/2)], data['bp'][:int(len(data['t'])/2)], color=colors['bp'], label='BP On')
-    plt.plot(data['t'][:int(len(data['t'])/2)], data['lp'][:int(len(data['t'])/2)], color=colors['lp'], label='LP')
-    plt.plot(data['t'][:int(len(data['t'])/2)], data['e'][:int(len(data['t'])/2)], color=colors['e'], label='E On')
-    plt.plot(data['t'][:int(len(data['t'])/2)], data['d_on'][:int(len(data['t'])/2)], color=colors['d'], label='D On')
-    plt.plot(data['t'][:int(len(data['t'])/2)], data['s_on'][:int(len(data['t'])/2)], color=colors['s'], label='S On')
+    plt.plot(data['t'][:int(len(data['t'])/2)], data['in'][:int(len(data['t'])/2)], color=colors['in'], label=r'$In$')
+    plt.plot(data['t'][:int(len(data['t'])/2)], data['bp'][:int(len(data['t'])/2)], color=colors['bp'], label=r'$B_O$')
+    plt.plot(data['t'][:int(len(data['t'])/2)], data['lp'][:int(len(data['t'])/2)], color=colors['lp'], label=r'$L$')
+    plt.plot(data['t'][:int(len(data['t'])/2)], data['e'][:int(len(data['t'])/2)], color=colors['e'], label=r'$E_O$')
+    plt.plot(data['t'][:int(len(data['t'])/2)], data['d_on'][:int(len(data['t'])/2)], color=colors['d'], label=r'$D_O$')
+    plt.plot(data['t'][:int(len(data['t'])/2)], data['s_on'][:int(len(data['t'])/2)], color=colors['s'], label=r'$S_O$')
     plt.legend(loc=4)
     plt.xlabel('t (ms)')
 
@@ -291,12 +293,12 @@ def step_off(colors, title=True):
     data = load_data('Step Responses/negative.pc')
     if title:
         plt.title('Off Pathway')
-    plt.plot(data['t'][int(len(data['t'])/2):], data['in'][int(len(data['t'])/2):], color=colors['in'], label='In')
-    plt.plot(data['t'][int(len(data['t'])/2):], data['bp'][int(len(data['t'])/2):], color=colors['bp'], label='BP Off')
-    plt.plot(data['t'][int(len(data['t'])/2):], data['lp'][int(len(data['t'])/2):], color=colors['lp'], label='LP')
-    plt.plot(data['t'][int(len(data['t'])/2):], data['e'][int(len(data['t'])/2):], color=colors['e'], label='E Off')
-    plt.plot(data['t'][int(len(data['t'])/2):], data['d_off'][int(len(data['t'])/2):], color=colors['d'], label='D Off')
-    plt.plot(data['t'][int(len(data['t'])/2):], data['s_off'][int(len(data['t'])/2):], color=colors['s'], label='S Off')
+    plt.plot(data['t'][int(len(data['t'])/2):], data['in'][int(len(data['t'])/2):], color=colors['in'], label=r'$In$')
+    plt.plot(data['t'][int(len(data['t'])/2):], data['bp'][int(len(data['t'])/2):], color=colors['bp'], label=r'$B_F$')
+    plt.plot(data['t'][int(len(data['t'])/2):], data['lp'][int(len(data['t'])/2):], color=colors['lp'], label=r'$L$')
+    plt.plot(data['t'][int(len(data['t'])/2):], data['e'][int(len(data['t'])/2):], color=colors['e'], label=r'$E_F$')
+    plt.plot(data['t'][int(len(data['t'])/2):], data['d_off'][int(len(data['t'])/2):], color=colors['d'], label=r'$D_F$')
+    plt.plot(data['t'][int(len(data['t'])/2):], data['s_off'][int(len(data['t'])/2):], color=colors['s'], label=r'$S_F$')
     plt.legend()
     plt.xlabel('t (ms)')
 
@@ -347,23 +349,26 @@ def plot_on(colors):
     emd_in_lr = load_data('Neuron Data/emd_in_0_%i.pc' % index)
     t = stim_lr['t']
     stim_example_lr = stim_lr['stim']
-    window_lr = [1000, 1500]
+    window_lr = [990, 1490]
+    # window_lr = [0,4000]
 
     plt.figure(figsize=(7, 7*9/16))
 
     plt.subplot(3,2,1)
-    plt.plot(t, stim_example_lr, label='Visual Stimulus')
-    plt.legend()
+    plt.plot(t, stim_example_lr[:,0], color=colors['e'], linestyle='--', label='Visual Stimulus')
+    plt.plot(t, stim_example_lr[:,1], color=colors['d'], label='Visual Stimulus')
+    plt.plot(t, stim_example_lr[:,2], color=colors['s'], linestyle=':', label='Visual Stimulus')
+    # plt.legend()
     plt.xlim(window_lr)
     plt.subplot(3,2,3)
-    plt.plot(t, emd_in_lr['e'], color=colors['e'], label='E On')
-    plt.plot(t, emd_in_lr['d_on'], color=colors['d'], label='D On')
-    plt.plot(t, emd_in_lr['s_on'], color=colors['s'], label='S On')
-    plt.legend()
+    plt.plot(t, emd_in_lr['e'], color=colors['e'], linestyle='--', label=r'$E_O$')
+    plt.plot(t, emd_in_lr['d_on'], color=colors['d'], label=r'$D_O$')
+    plt.plot(t, emd_in_lr['s_on'], color=colors['s'], linestyle=':', label=r'$S_O$')
+    # plt.legend()
     plt.xlim(window_lr)
     plt.subplot(3,2,5)
-    plt.plot(t, emd_lr['on_b'], color=colors['on'], label='On B')
-    plt.legend()
+    plt.plot(t, emd_lr['on_b'], color=colors['on'], label=r'$On_B$')
+    # plt.legend()
     plt.xlim(window_lr)
     plt.xlabel('t (ms)')
 
@@ -373,21 +378,24 @@ def plot_on(colors):
     emd_in_rl = load_data('Neuron Data/emd_in_0_%i.pc' % index)
     t = stim_rl['t']
     stim_example_rl = stim_rl['stim']
-    window_rl = [1000, 1500]
+    window_rl = [0, 600]
+    # window_rl = [0, 4000]
 
     plt.subplot(3, 2, 2)
-    plt.plot(t, stim_example_rl, label='Visual Stimulus')
-    plt.legend()
+    plt.plot(t, stim_example_rl[:,0], color=colors['e'], linestyle='--', label='Visual Stimulus')
+    plt.plot(t, stim_example_rl[:,1], color=colors['d'], label='Visual Stimulus')
+    plt.plot(t, stim_example_rl[:,2], color=colors['s'], linestyle=':', label='Visual Stimulus')
+    # plt.legend()
     plt.xlim(window_rl)
     plt.subplot(3, 2, 4)
-    plt.plot(t, emd_in_rl['e'], color=colors['e'], label='E On')
-    plt.plot(t, emd_in_rl['d_on'], color=colors['d'], label='D On')
-    plt.plot(t, emd_in_rl['s_on'], color=colors['s'], label='S On')
-    plt.legend()
+    plt.plot(t, emd_in_rl['e'], color=colors['e'], linestyle='--', label=r'$E_O$')
+    plt.plot(t, emd_in_rl['d_on'], color=colors['d'], label=r'$D_O$')
+    plt.plot(t, emd_in_rl['s_on'], color=colors['s'], linestyle=':', label=r'$S_O$')
+    # plt.legend()
     plt.xlim(window_rl)
     plt.subplot(3, 2, 6)
-    plt.plot(t, emd_rl['on_b'], color=colors['on'], label='On B')
-    plt.legend()
+    plt.plot(t, emd_rl['on_b'], color=colors['on'], label=r'$On_B$')
+    # plt.legend()
     plt.xlim(window_rl)
     plt.xlabel('t (ms)')
     plt.tight_layout()
@@ -401,23 +409,26 @@ def plot_off(colors):
     emd_in_lr = load_data('Neuron Data/emd_in_0_%i.pc' % index)
     t = stim_lr['t']
     stim_example_lr = stim_lr['stim']
-    window_lr = [500, 1000]
+    window_lr = [490, 990]
+    # window_lr = [0, 4000]
 
     plt.figure(figsize=(7, 7 * 9 / 16))
 
     plt.subplot(3, 2, 1)
-    plt.plot(t, stim_example_lr, label='Visual Stimulus')
-    plt.legend()
+    plt.plot(t, stim_example_lr[:,0], color=colors['e'], linestyle='--', label='Visual Stimulus')
+    plt.plot(t, stim_example_lr[:,1], color=colors['d'], label='Visual Stimulus')
+    plt.plot(t, stim_example_lr[:,2], color=colors['s'], linestyle=':', label='Visual Stimulus')
+    # plt.legend()
     plt.xlim(window_lr)
     plt.subplot(3, 2, 3)
-    plt.plot(t, emd_in_lr['e'], color=colors['e'], label='E Off')
-    plt.plot(t, emd_in_lr['d_off'], color=colors['d'], label='D Off')
-    plt.plot(t, emd_in_lr['s_off'], color=colors['s'], label='S Off')
-    plt.legend()
+    plt.plot(t, emd_in_lr['e'], color=colors['e'], linestyle='--', label=r'$E_F$')
+    plt.plot(t, emd_in_lr['d_off'], color=colors['d'], linestyle=':', label=r'$D_F$')
+    plt.plot(t, emd_in_lr['s_off'], color=colors['s'], label=r'$S_F$')
+    # plt.legend()
     plt.xlim(window_lr)
     plt.subplot(3, 2, 5)
-    plt.plot(t, emd_lr['off_b'], color=colors['off'], label='Off B')
-    plt.legend()
+    plt.plot(t, emd_lr['off_b'], color=colors['off'], label=r'$Off_B$')
+    # plt.legend()
     plt.xlim(window_lr)
     plt.xlabel('t (ms)')
 
@@ -427,21 +438,24 @@ def plot_off(colors):
     emd_in_rl = load_data('Neuron Data/emd_in_0_%i.pc' % index)
     t = stim_rl['t']
     stim_example_rl = stim_rl['stim']
-    window_rl = [500, 1000]
+    window_rl = [490, 990]
+    # window_rl = [0,4000]
 
     plt.subplot(3, 2, 2)
-    plt.plot(t, stim_example_rl, label='Visual Stimulus')
-    plt.legend()
+    plt.plot(t, stim_example_rl[:,0], color=colors['e'], linestyle='--', label='Visual Stimulus')
+    plt.plot(t, stim_example_rl[:,1], color=colors['d'], label='Visual Stimulus')
+    plt.plot(t, stim_example_rl[:,2], color=colors['s'], linestyle=':', label='Visual Stimulus')
+    # plt.legend()
     plt.xlim(window_rl)
     plt.subplot(3, 2, 4)
-    plt.plot(t, emd_in_rl['e'], color=colors['e'], label='E On')
-    plt.plot(t, emd_in_rl['d_off'], color=colors['d'], label='D Off')
-    plt.plot(t, emd_in_rl['s_off'], color=colors['s'], label='S Off')
-    plt.legend()
+    plt.plot(t, emd_in_rl['e'], color=colors['e'], linestyle='--', label=r'$E_F$')
+    plt.plot(t, emd_in_rl['d_off'], color=colors['d'], label=r'$D_F$')
+    plt.plot(t, emd_in_rl['s_off'], color=colors['s'], linestyle=':', label=r'$S_F$')
+    # plt.legend()
     plt.xlim(window_rl)
     plt.subplot(3, 2, 6)
-    plt.plot(t, emd_rl['off_b'], color=colors['off'], label='Off B')
-    plt.legend()
+    plt.plot(t, emd_rl['off_b'], color=colors['off'], label=r'$Off_B$')
+    # plt.legend()
     plt.xlim(window_rl)
     plt.xlabel('t (ms)')
     plt.tight_layout()
@@ -485,22 +499,26 @@ def plot_frequency_response(vels, colors):
     plt.figure(figsize=(7, 7 * 9 / 16))
     plt.subplot(2,2,1)
     plt.plot(vels, peaks_on, color=colors['on'])
+    plt.axvline(x=180,linestyle='--',color='black')
     plt.xscale('log')
     plt.ylabel('Peak Magnitude')
     plt.title('On Pathway')
     plt.subplot(2,2,3)
     plt.plot(vels, ratios_on, color=colors['on'])
+    plt.axvline(x=180,linestyle='--',color='black')
     plt.xscale('log')
     plt.xlabel('Velocity (deg/s)')
     plt.ylabel('PD/ND')
 
     plt.subplot(2, 2, 2)
     plt.plot(vels, peaks_off, color=colors['off'])
+    plt.axvline(x=180,linestyle='--',color='black')
     plt.xscale('log')
     # plt.ylabel('Peak Magnitude')
     plt.title('Off Pathway')
     plt.subplot(2, 2, 4)
     plt.plot(vels, ratios_off, color=colors['off'])
+    plt.axvline(x=180,linestyle='--',color='black')
     plt.xscale('log')
     plt.xlabel('Velocity (deg/s)')
     # plt.ylabel('PD/ND')
@@ -570,7 +588,7 @@ def main():
     # mcmc_correlogram(t4_h5, t4_toml, params_used, 'T4')
     # mcmc_correlogram(t5_h5, t5_toml, params_used, 'T5')
 
-    # plt.show()
+    plt.show()
 
 if __name__ == '__main__':
     main()

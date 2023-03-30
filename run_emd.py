@@ -94,17 +94,21 @@ def run(model, net, stim, device, size, dir, filename, dt, all, interval):
     num_samples = stim.shape[0]
     t = np.linspace(0, dt * num_samples * interval, num=num_samples * interval)
     data = torch.zeros([num_samples*interval, net.get_num_outputs_actual()], device=device)
-    stim_example = torch.zeros(len(t))
+    stim_example = torch.zeros([len(t),3])
 
     index = 0
     j = 0
     for i in tqdm(range(len(t)), leave=False, colour='blue'):
         if index < num_samples:
             data[i, :] = model(stim[index,:])
-            stim_example[i] = stim[index,24]
+            stim_example[i, 0] = stim[index, 23]
+            stim_example[i, 1] = stim[index, 24]
+            stim_example[i, 2] = stim[index, 25]
         else:
             data[i, :] = model(stim[-1,:])
-            stim_example[i] = stim[-1,24]
+            stim_example[i,0] = stim[-1,23]
+            stim_example[i,1] = stim[-1,24]
+            stim_example[i,2] = stim[-1,25]
         j += 1
         if j == interval:
             index += 1
@@ -214,7 +218,7 @@ def run(model, net, stim, device, size, dir, filename, dt, all, interval):
 
     return
 
-def collect_data(vels, angles, stims, dir, all=False, suffix=None, center=False, params=None):
+def collect_data(vels, angles, stims, dir, all=False, suffix=None, center=False, params=None, scale=None):
     if params is None:
         params = load_data('params_net_20230327.pc')
 
@@ -222,7 +226,7 @@ def collect_data(vels, angles, stims, dir, all=False, suffix=None, center=False,
     flat_size = shape[0] * shape[1]
     backend = 'torch'
     device = 'cuda'
-    model, net = gen_motion_vision(params, shape, backend, device, center=center)
+    model, net = gen_motion_vision(params, shape, backend, device, center=center, scale=scale)
     dt = params['dt']
 
     wavelength = 30.0
@@ -244,19 +248,19 @@ stims = get_stimulus()
 vels = [30.0]
 angles = [0, 180]
 dir = 'Neuron Data'
-collect_data(vels, angles, stims, dir, all=True, center=True)
+collect_data(vels, angles, stims, dir, all=True, center=True, scale=False)
 
 # Frequency Response
 vels = np.geomspace(10,360,10)
 angles = [0]
 dir = 'Frequency Response'
-collect_data(vels, angles, stims, dir, all=False)
+collect_data(vels, angles, stims, dir, all=False,center=True, scale=False)
 
 # Radar
 vels = [30.0]
 angles = [0, 45, 90, 135, 180, 225, 270, 315]
 dir = 'Radar Data'
-collect_data(vels, angles, stims, dir, all=False)
+collect_data(vels, angles, stims, dir, all=False,center=True, scale=False)
 
 # # Cutoff Fast
 # vels = [30.0]

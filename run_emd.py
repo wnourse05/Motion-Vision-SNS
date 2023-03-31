@@ -251,7 +251,7 @@ dir = 'Neuron Data'
 collect_data(vels, angles, stims, dir, all=True, center=True, scale=False)
 
 # Frequency Response
-vels = np.geomspace(10,360,10)
+vels = np.geomspace(9,360,10)
 angles = [0]
 dir = 'Frequency Response'
 collect_data(vels, angles, stims, dir, all=False,center=True, scale=False)

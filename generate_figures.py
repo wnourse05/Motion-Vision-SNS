@@ -242,30 +242,33 @@ def radar(angles, key, title, color, legend=False):
     # print(peaks)
 
     plt.plot(angles, peaks, color=color)
+    yticksize = mpl.rcParams['ytick.labelsize']
+    plt.yticks(fontsize=yticksize*0.75)
 
     plt.title(title)
     if legend:
         plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, mode="expand", borderaxespad=0.)
 
 def total_radar(colors):
+    sea.set(font_scale=2)
     angles = [0, 45, 90, 135, 180, 225, 270, 315, 0]
     plt.figure(figsize=(2*7, 2*7*9/16))
     plt.subplot(2, 4, 1, polar=True)
-    radar(angles, 'on_a', r'$On_A$', colors['on'])
+    radar(angles, 'on_a', r'On$_A$', colors['on'])
     plt.subplot(2, 4, 2, polar=True)
-    radar(angles, 'on_b', r'$On_B$', colors['on'])
+    radar(angles, 'on_b', r'On$_B$', colors['on'])
     plt.subplot(2, 4, 3, polar=True)
-    radar(angles, 'off_a', r'$Off_A$', colors['off'])
+    radar(angles, 'off_a', r'Off$_A$', colors['off'])
     plt.subplot(2, 4, 4, polar=True)
-    radar(angles, 'off_b', r'$Off_B$', colors['off'])
+    radar(angles, 'off_b', r'Off$_B$', colors['off'])
     plt.subplot(2, 4, 5, polar=True)
-    radar(angles, 'on_c', r'$On_C$', colors['on'])
+    radar(angles, 'on_c', r'On$_C$', colors['on'])
     plt.subplot(2, 4, 6, polar=True)
-    radar(angles, 'on_d', r'$On_D$', colors['on'])
+    radar(angles, 'on_d', r'On$_D$', colors['on'])
     plt.subplot(2, 4, 7, polar=True)
-    radar(angles, 'off_c', r'$Off_C$', colors['off'])
+    radar(angles, 'off_c', r'Off$_C$', colors['off'])
     plt.subplot(2, 4, 8, polar=True)
-    radar(angles, 'off_d', r'$Off_D$', colors['off'])
+    radar(angles, 'off_d', r'Off$_D$', colors['off'])
     plt.tight_layout()
     plt.savefig('Figures/figure_radar.svg')
     plt.savefig('Figures/figure_radar.pdf')
@@ -497,31 +500,50 @@ def plot_frequency_response(vels, colors):
         ratios_off[i] = data['off_b'] / data['off_a']
 
     plt.figure(figsize=(7, 7 * 9 / 16))
-    plt.subplot(2,2,1)
+    plt.subplot(2,1,1)
     plt.plot(vels, peaks_on, color=colors['on'])
+    plt.plot(vels, peaks_off, color=colors['off'], linestyle='--')
     plt.axvline(x=180,linestyle='--',color='black')
     plt.xscale('log')
     plt.ylabel('Peak Magnitude')
-    plt.title('On Pathway')
-    plt.subplot(2,2,3)
+    plt.ylim([0,None])
+    # plt.title('On Pathway')
+    plt.subplot(2,1,2)
     plt.plot(vels, ratios_on, color=colors['on'])
+    plt.plot(vels, ratios_off, color=colors['off'], linestyle='--')
     plt.axvline(x=180,linestyle='--',color='black')
+    # plt.axhline(y=1,linestyle='--',color='black')
     plt.xscale('log')
-    plt.xlabel('Velocity (deg/s)')
+    plt.yscale('log')
+    plt.xlabel(r'Velocity ($^{\circ}$/s)')
     plt.ylabel('PD/ND')
-
-    plt.subplot(2, 2, 2)
-    plt.plot(vels, peaks_off, color=colors['off'])
-    plt.axvline(x=180,linestyle='--',color='black')
-    plt.xscale('log')
+    plt.ylim([1, None])
+    # plt.figure(figsize=(7, 7 * 9 / 16))
+    # plt.subplot(2,2,1)
+    # plt.plot(vels, peaks_on, color=colors['on'])
+    # plt.axvline(x=180,linestyle='--',color='black')
+    # plt.xscale('log')
     # plt.ylabel('Peak Magnitude')
-    plt.title('Off Pathway')
-    plt.subplot(2, 2, 4)
-    plt.plot(vels, ratios_off, color=colors['off'])
-    plt.axvline(x=180,linestyle='--',color='black')
-    plt.xscale('log')
-    plt.xlabel('Velocity (deg/s)')
+    # plt.title('On Pathway')
+    # plt.subplot(2,2,3)
+    # plt.plot(vels, ratios_on, color=colors['on'])
+    # plt.axvline(x=180,linestyle='--',color='black')
+    # plt.xscale('log')
+    # plt.xlabel('Velocity (deg/s)')
     # plt.ylabel('PD/ND')
+    #
+    # plt.subplot(2, 2, 2)
+    # plt.plot(vels, peaks_off, color=colors['off'])
+    # plt.axvline(x=180,linestyle='--',color='black')
+    # plt.xscale('log')
+    # # plt.ylabel('Peak Magnitude')
+    # plt.title('Off Pathway')
+    # plt.subplot(2, 2, 4)
+    # plt.plot(vels, ratios_off, color=colors['off'])
+    # plt.axvline(x=180,linestyle='--',color='black')
+    # plt.xscale('log')
+    # plt.xlabel('Velocity (deg/s)')
+    # # plt.ylabel('PD/ND')
     plt.tight_layout()
     plt.savefig('Figures/figure_frequency.svg')
     plt.savefig('Figures/figure_frequency.pdf')
@@ -554,39 +576,15 @@ def main():
               'off': '#999933'}  # olive
     set_style()
 
-    step_figure(colors)
+    # step_figure(colors)
 
-    plot_on(colors)
-    plot_off(colors)
+    # plot_on(colors)
+    # plot_off(colors)
 
-    vels = np.geomspace(10, 360, 10)
-    plot_frequency_response(vels, colors)
+    # vels = np.geomspace(10, 360, 10)
+    # plot_frequency_response(vels, colors)
 
-    # t4_best = load_data('t4_best_results.pc')
-    # t5_best = load_data('t5_best_results.pc')
-
-
-    # dim = 7
-    # fov_res = 5
-    # fov = fov_res*dim
-    # wavelength = fov
-    # angles = [0,45]
-    # plot_sinusoids(wavelength, angles, fov, fov_res, title=False)
-
-
-    # radar(vels, angles, 't4a', 'T4a', colors['t4'])
-    # radar(vels, angles, 't4b', 'T4b', colors['t4'])
-    # radar(vels, angles, 't4c', 'T4c', colors['t4'])
-    # radar(vels, angles, 't4d', 'T4d', colors['t4'])
     total_radar(colors)
-
-    # params_used = np.array([0,1,2,3,4])
-    # t4_h5 = '2023-Mar-24_07-15.t4a.h5'
-    # t4_toml = "conf_t4_reduced.toml"
-    # t5_h5 = '2023-Mar-25_05-40_t5.h5'
-    # t5_toml = 'conf_t5_mcmc.toml'
-    # mcmc_correlogram(t4_h5, t4_toml, params_used, 'T4')
-    # mcmc_correlogram(t5_h5, t5_toml, params_used, 'T5')
 
     plt.show()
 

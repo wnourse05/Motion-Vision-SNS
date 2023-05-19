@@ -353,14 +353,16 @@ def plot_on(colors):
     t = stim_lr['t']
     stim_example_lr = stim_lr['stim']
     window_lr = [990, 1490]
+    window_y = [-0.5,0.5]
     # window_lr = [0,4000]
 
-    plt.figure(figsize=(7, 7*9/16))
+    fig = plt.figure(figsize=(7, 7*9/16))
 
     plt.subplot(3,2,1)
-    plt.plot(t, stim_example_lr[:,0], color=colors['e'], linestyle='--', label='Visual Stimulus')
-    plt.plot(t, stim_example_lr[:,1], color=colors['d'], label='Visual Stimulus')
-    plt.plot(t, stim_example_lr[:,2], color=colors['s'], linestyle=':', label='Visual Stimulus')
+    plt.title('Preferred Direction')
+    plt.plot(t, stim_example_lr[:,0], color=colors['in'], linestyle='--', label='In (Left)')
+    plt.plot(t, stim_example_lr[:,1], color=colors['in'], label='In (Center)')
+    plt.plot(t, stim_example_lr[:,2], color=colors['in'], linestyle=':', label='In (Right)')
     # plt.legend()
     plt.xlim(window_lr)
     plt.subplot(3,2,3)
@@ -373,6 +375,7 @@ def plot_on(colors):
     plt.plot(t, emd_lr['on_b'], color=colors['on'], label=r'$On_B$')
     # plt.legend()
     plt.xlim(window_lr)
+    plt.ylim(window_y)
     plt.xlabel('t (ms)')
 
     index = 1
@@ -385,23 +388,29 @@ def plot_on(colors):
     # window_rl = [0, 4000]
 
     plt.subplot(3, 2, 2)
-    plt.plot(t, stim_example_rl[:,0], color=colors['e'], linestyle='--', label='Visual Stimulus')
-    plt.plot(t, stim_example_rl[:,1], color=colors['d'], label='Visual Stimulus')
-    plt.plot(t, stim_example_rl[:,2], color=colors['s'], linestyle=':', label='Visual Stimulus')
+    plt.title('Null Direction')
+    plt.plot(t, stim_example_rl[:,0], color=colors['in'], linestyle='--')
+    plt.plot(t, stim_example_rl[:,1], color=colors['in'])
+    plt.plot(t, stim_example_rl[:,2], color=colors['in'], linestyle=':')
     # plt.legend()
     plt.xlim(window_rl)
     plt.subplot(3, 2, 4)
-    plt.plot(t, emd_in_rl['e'], color=colors['e'], linestyle='--', label=r'$E_O$')
-    plt.plot(t, emd_in_rl['d_on'], color=colors['d'], label=r'$D_O$')
-    plt.plot(t, emd_in_rl['s_on'], color=colors['s'], linestyle=':', label=r'$S_O$')
+    plt.plot(t, emd_in_rl['e'], color=colors['e'], linestyle='--')
+    plt.plot(t, emd_in_rl['d_on'], color=colors['d'])
+    plt.plot(t, emd_in_rl['s_on'], color=colors['s'], linestyle=':')
     # plt.legend()
     plt.xlim(window_rl)
     plt.subplot(3, 2, 6)
-    plt.plot(t, emd_rl['on_b'], color=colors['on'], label=r'$On_B$')
+    plt.plot(t, emd_rl['on_b'], color=colors['on'])
     # plt.legend()
     plt.xlim(window_rl)
+    plt.ylim(window_y)
     plt.xlabel('t (ms)')
+
+
     plt.tight_layout()
+    fig.legend(loc=8, mode='expand', ncol=7)  # , bbox_to_anchor=(0.5, 0.0))
+
     plt.savefig('Figures/figure_on.svg')
     plt.savefig('Figures/figure_on.pdf')
 
@@ -413,26 +422,29 @@ def plot_off(colors):
     t = stim_lr['t']
     stim_example_lr = stim_lr['stim']
     window_lr = [490, 990]
+    window_y = [-1,1]
     # window_lr = [0, 4000]
 
-    plt.figure(figsize=(7, 7 * 9 / 16))
+    fig = plt.figure(figsize=(7, 7 * 9 / 16))
 
     plt.subplot(3, 2, 1)
-    plt.plot(t, stim_example_lr[:,0], color=colors['e'], linestyle='--', label='Visual Stimulus')
-    plt.plot(t, stim_example_lr[:,1], color=colors['d'], label='Visual Stimulus')
-    plt.plot(t, stim_example_lr[:,2], color=colors['s'], linestyle=':', label='Visual Stimulus')
+    plt.title('Preferred Direction')
+    plt.plot(t, stim_example_lr[:,0], color=colors['in'], linestyle='--', label='In (Left)')
+    plt.plot(t, stim_example_lr[:,1], color=colors['in'], label='In (Center)')
+    plt.plot(t, stim_example_lr[:,2], color=colors['in'], linestyle=':', label='In (Right)')
     # plt.legend()
     plt.xlim(window_lr)
     plt.subplot(3, 2, 3)
     plt.plot(t, emd_in_lr['e'], color=colors['e'], linestyle='--', label=r'$E_F$')
-    plt.plot(t, emd_in_lr['d_off'], color=colors['d'], linestyle=':', label=r'$D_F$')
-    plt.plot(t, emd_in_lr['s_off'], color=colors['s'], label=r'$S_F$')
+    plt.plot(t, emd_in_lr['d_off'], color=colors['d'], label=r'$D_F$')
+    plt.plot(t, emd_in_lr['s_off'], color=colors['s'], linestyle=':', label=r'$S_F$')
     # plt.legend()
     plt.xlim(window_lr)
     plt.subplot(3, 2, 5)
     plt.plot(t, emd_lr['off_b'], color=colors['off'], label=r'$Off_B$')
     # plt.legend()
     plt.xlim(window_lr)
+    plt.ylim(window_y)
     plt.xlabel('t (ms)')
 
     index = 1
@@ -445,23 +457,30 @@ def plot_off(colors):
     # window_rl = [0,4000]
 
     plt.subplot(3, 2, 2)
-    plt.plot(t, stim_example_rl[:,0], color=colors['e'], linestyle='--', label='Visual Stimulus')
-    plt.plot(t, stim_example_rl[:,1], color=colors['d'], label='Visual Stimulus')
-    plt.plot(t, stim_example_rl[:,2], color=colors['s'], linestyle=':', label='Visual Stimulus')
+    plt.title('Null Direction')
+    plt.plot(t, stim_example_rl[:,0], color=colors['in'], linestyle='--')
+    plt.plot(t, stim_example_rl[:,1], color=colors['in'])
+    plt.plot(t, stim_example_rl[:,2], color=colors['in'], linestyle=':')
     # plt.legend()
     plt.xlim(window_rl)
     plt.subplot(3, 2, 4)
-    plt.plot(t, emd_in_rl['e'], color=colors['e'], linestyle='--', label=r'$E_F$')
-    plt.plot(t, emd_in_rl['d_off'], color=colors['d'], label=r'$D_F$')
-    plt.plot(t, emd_in_rl['s_off'], color=colors['s'], linestyle=':', label=r'$S_F$')
+    plt.plot(t, emd_in_rl['e'], color=colors['e'], linestyle='--')
+    plt.plot(t, emd_in_rl['d_off'], color=colors['d'])
+    plt.plot(t, emd_in_rl['s_off'], color=colors['s'], linestyle=':')
     # plt.legend()
     plt.xlim(window_rl)
     plt.subplot(3, 2, 6)
-    plt.plot(t, emd_rl['off_b'], color=colors['off'], label=r'$Off_B$')
+    plt.plot(t, emd_rl['off_b'], color=colors['off'])
     # plt.legend()
     plt.xlim(window_rl)
+    plt.ylim(window_y)
     plt.xlabel('t (ms)')
+
+
     plt.tight_layout()
+    fig.legend(loc=8, mode='expand', ncol=7)  # , bbox_to_anchor=(0.5, 0.0))
+
+
     plt.savefig('Figures/figure_off.svg')
     plt.savefig('Figures/figure_off.pdf')
 
@@ -548,6 +567,28 @@ def plot_frequency_response(vels, colors):
     plt.savefig('Figures/figure_frequency.svg')
     plt.savefig('Figures/figure_frequency.pdf')
 
+def bp_traces(colors):
+    saved = load_data('bp_step_response.pc')
+
+    t = saved['t']
+    inp = saved['inp']
+    data = saved['data']
+
+    plt.figure()
+    plt.plot(t, inp, color=colors['in'], label='Input')
+    plt.plot(t, data[0, :], color='C0', linestyle='--', label='I')
+    plt.plot(t, data[1, :], color='C3', linestyle=':', label='Fast')
+    plt.plot(t, data[2, :], color='C7', linestyle='dashdot', label='Slow')
+    plt.plot(t, data[3, :], color=colors['bp'], label='Out')
+    plt.ylabel('Response')
+    plt.xlabel('t (ms)')
+    plt.legend()
+    plt.tight_layout()
+
+
+    plt.savefig('Figures/figure_bp.svg')
+    plt.savefig('Figures/figure_bp.pdf')
+
 """
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Run Everything
@@ -584,7 +625,9 @@ def main():
     # vels = np.geomspace(10, 360, 10)
     # plot_frequency_response(vels, colors)
 
-    total_radar(colors)
+    # total_radar(colors)
+
+    bp_traces(colors)
 
     plt.show()
 

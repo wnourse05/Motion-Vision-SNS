@@ -28,19 +28,24 @@ min_angle = -20
 axis = np.arange(min_angle, max_angle+res, res)
 
 plt.figure()
+plt.subplot(2,1,1)
 width = 0.35
 offset, _, lamina_norm, _ = gen_bar_chart(field_data['lamina'], axis, width, 0)
 offset, _, medulla_on_norm, _ = gen_bar_chart(field_data['medullaOn'], axis, width, offset)
 _, _, medulla_off_norm, _ = gen_bar_chart(field_data['medullaOff'], axis, width, offset)
 plt.legend()
+# plt.xlabel('Degrees from Center')
+plt.ylabel('Normalized Magnitude')
 
 norms = np.vstack((lamina_norm, medulla_on_norm, medulla_off_norm))
 peaks = np.max(norms,axis=0)
 std = np.std(norms,axis=0)
 var = np.var(norms,axis=0)
 
-plt.figure()
+plt.subplot(2,1,2)
 plt.bar(axis, peaks, yerr=var)
 print(peaks)
+plt.xlabel('Degrees from Center')
+plt.ylabel('Normalized Magnitude')
 
 plt.show()

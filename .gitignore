@@ -132,3 +132,6 @@ dmypy.json
 .idea/workspace.xml
 
 Neuron Data/
+
+Dataset/dataset.p
+Dataset/dataset_nearest.p

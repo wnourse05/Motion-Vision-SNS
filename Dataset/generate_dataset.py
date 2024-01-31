@@ -29,7 +29,7 @@ def process_file(file_path, index, num_frames, scaled_width, scaled_height):
         img = data['image'][i]  # grab frame
 
         # Resize the image using the fastest interpolation method (cv2.INTER_NEAREST)
-        scaled_image = cv2.resize(img, (2 * scaled_width, scaled_height), interpolation=cv2.INTER_NEAREST)
+        scaled_image = cv2.resize(img, (2 * scaled_width, scaled_height), interpolation=cv2.INTER_AREA)
         scaled_image_green = scaled_image[:, :, 1]  # isolate green channel
         # store scaled frame in buffers
         left_frames.append(scaled_image_green[:, :32])

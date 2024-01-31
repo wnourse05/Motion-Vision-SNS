@@ -133,5 +133,5 @@ dmypy.json
 
 Neuron Data/
 
-Dataset/dataset.p
-Dataset/dataset_nearest.p
+Motion Vision Dataset/dataset.p
+Motion Vision Dataset/dataset_nearest.p

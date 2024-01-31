@@ -69,28 +69,28 @@ def test_emd(dt, model, net, stim, interval):
             j = 0
     # else:
     #     for i in range(len(t)):
-    #         data[i, :] = model(stim[i, :])
+    #         data_sns_toolbox[i, :] = model(stim[i, :])
 
-    # data = data.to('cpu')
+    # data_sns_toolbox = data_sns_toolbox.to('cpu')
     data = data.transpose()
-    # r_l = data[0, :]
-    # r_c = data[1, :]
-    # r_r = data[2, :]
-    # l1_l = data[3, :]
-    # l1_c = data[4, :]
-    # l1_r = data[5, :]
-    # l3_l = data[6, :]
-    # l3_c = data[7, :]
-    # l3_r = data[8, :]
-    # mi1_l = data[9, :]
-    # mi1_c = data[10, :]
-    # mi1_r = data[11, :]
-    # mi9_l = data[12, :]
-    # mi9_c = data[13, :]
-    # mi9_r = data[14, :]
-    # ct1_l = data[15, :]
-    # ct1_c = data[16, :]
-    # ct1_r = data[17, :]
+    # r_l = data_sns_toolbox[0, :]
+    # r_c = data_sns_toolbox[1, :]
+    # r_r = data_sns_toolbox[2, :]
+    # l1_l = data_sns_toolbox[3, :]
+    # l1_c = data_sns_toolbox[4, :]
+    # l1_r = data_sns_toolbox[5, :]
+    # l3_l = data_sns_toolbox[6, :]
+    # l3_c = data_sns_toolbox[7, :]
+    # l3_r = data_sns_toolbox[8, :]
+    # mi1_l = data_sns_toolbox[9, :]
+    # mi1_c = data_sns_toolbox[10, :]
+    # mi1_r = data_sns_toolbox[11, :]
+    # mi9_l = data_sns_toolbox[12, :]
+    # mi9_c = data_sns_toolbox[13, :]
+    # mi9_r = data_sns_toolbox[14, :]
+    # ct1_l = data_sns_toolbox[15, :]
+    # ct1_c = data_sns_toolbox[16, :]
+    # ct1_r = data_sns_toolbox[17, :]
     t4_a = data[18, :]
     t4_b = data[19, :]
 
@@ -154,12 +154,12 @@ def freq_response_emd(dt, intervals, num_intervals, stim, params_mcmc):
     for i in range(num_intervals):
         a_peaks[i], b_peaks[i], ratios[i] = test_emd(dt, model, net, stim, intervals[i])
 
-    # data = {'vels': vels,
+    # data_sns_toolbox = {'vels': vels,
     #         'a_peaks': a_peaks,
     #         'b_peaks': b_peaks,
     #         'ratios': ratios}
     # filename = dir + 'set' + param_string
-    # save_data(data, filename)
+    # save_data(data_sns_toolbox, filename)
 
     return a_peaks, b_peaks, ratios
 
@@ -215,7 +215,7 @@ def easy_neg_log_prior(num_params: int) -> pypesto.objective.NegLogParameterPrio
 
 def save_estimated_data(result_sampler: pypesto.Result) -> None:
     """
-    save estimated data in hdf5
+    save estimated data_sns_toolbox in hdf5
     @param result_sampler: sample results
     @return: None
     """
@@ -317,7 +317,7 @@ def run_t4_estimation(vels, num_intervals, stim, goal) -> pypesto.Result:
             # pypesto.sample.geweke_test(result=result_sampler)
             print('finished result sampler')
             save_estimated_data(result_sampler)  # TODO: comes from somewhere
-            print('saved data')
+            print('saved data_sns_toolbox')
             return result_sampler
         except Exception as e:
             logging.exception(e)

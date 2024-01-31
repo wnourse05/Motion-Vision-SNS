@@ -44,28 +44,28 @@ def test_emd(dt, model, net, stim, interval):
             j = 0
     # else:
     #     for i in range(len(t)):
-    #         data[i, :] = model(stim[i, :])
+    #         data_sns_toolbox[i, :] = model(stim[i, :])
 
-    # data = data.to('cpu')
+    # data_sns_toolbox = data_sns_toolbox.to('cpu')
     data = data.transpose()
-    # r_l = data[0, :]
-    # r_c = data[1, :]
-    # r_r = data[2, :]
-    # l1_l = data[3, :]
-    # l1_c = data[4, :]
-    # l1_r = data[5, :]
-    # l3_l = data[6, :]
-    # l3_c = data[7, :]
-    # l3_r = data[8, :]
-    # mi1_l = data[9, :]
-    # mi1_c = data[10, :]
-    # mi1_r = data[11, :]
-    # mi9_l = data[12, :]
-    # mi9_c = data[13, :]
-    # mi9_r = data[14, :]
-    # ct1_l = data[15, :]
-    # ct1_c = data[16, :]
-    # ct1_r = data[17, :]
+    # r_l = data_sns_toolbox[0, :]
+    # r_c = data_sns_toolbox[1, :]
+    # r_r = data_sns_toolbox[2, :]
+    # l1_l = data_sns_toolbox[3, :]
+    # l1_c = data_sns_toolbox[4, :]
+    # l1_r = data_sns_toolbox[5, :]
+    # l3_l = data_sns_toolbox[6, :]
+    # l3_c = data_sns_toolbox[7, :]
+    # l3_r = data_sns_toolbox[8, :]
+    # mi1_l = data_sns_toolbox[9, :]
+    # mi1_c = data_sns_toolbox[10, :]
+    # mi1_r = data_sns_toolbox[11, :]
+    # mi9_l = data_sns_toolbox[12, :]
+    # mi9_c = data_sns_toolbox[13, :]
+    # mi9_r = data_sns_toolbox[14, :]
+    # ct1_l = data_sns_toolbox[15, :]
+    # ct1_c = data_sns_toolbox[16, :]
+    # ct1_r = data_sns_toolbox[17, :]
     t4_a = data[18, :]
     t4_b = data[19, :]
 

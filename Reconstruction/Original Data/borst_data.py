@@ -26,7 +26,7 @@ def calc_1d_point(x, A_rel, std_cen, std_sur):
 
 def plot_fields(data, res, max_angle, min_angle, cmap, norm, num_neurons):
     # fig = plt.figure()
-    # num_neurons = len(data['title'])
+    # num_neurons = len(data_sns_toolbox['title'])
     axis = np.arange(min_angle, max_angle + res, res)
     for neuron in range(num_neurons):
         plt.subplot(5, num_neurons, neuron+1)
@@ -120,12 +120,12 @@ def plot_properties(data, res, max_angle, min_angle, cmap, norm):
     plot_field_ratio(data, res, max_angle, min_angle, num_neurons)
     return fig
 
-# def plot_freq_response(data, dt):
+# def plot_freq_response(data_sns_toolbox, dt):
 
 
 """Data"""
 
-# Model data from supplemental material
+# Model data_sns_toolbox from supplemental material
 lamina = {'title':      ['L1', 'L2', 'L3', 'L4', 'L5'],
           'A_rel':      [0.012, 0.013, 0.193, 0.046, 0.035],
           'std_cen':    [2.679, 2.861, 2.514, 3.633, 2.883],

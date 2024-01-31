@@ -37,7 +37,7 @@ def gen_plot(data, gains, freqs, title, relative=True):
             ax.grid(which='minor', color='black', linestyle='-', linewidth=2)
             ax.tick_params(which='minor', bottom=False, left=False)
             # for r in range(len(gains)):
-            #     row = data[l,c,r,:]
+            #     row = data_sns_toolbox[l,c,r,:]
     plt.suptitle(title)
 
 

@@ -46,7 +46,7 @@ def run_net(g, cutoff, params_in, params_bp):
 
     for i in range(len(t)):
         data[i] = model(inputs[i, :])
-    # plt.plot(t, data, label=str(bias))
+    # plt.plot(t, data_sns_toolbox, label=str(bias))
 
     return np.max(data)
 

@@ -481,7 +481,7 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #     GATHER PROPERTIES
 #     """
 #     cutoffs = params[:-1]
-#     data = tune_neurons(cutoffs, 'on')
+#     data_sns_toolbox = tune_neurons(cutoffs, 'on')
 #     c = params[-1]
 #
 #     """
@@ -496,7 +496,7 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #     RETINA
 #     """
 #
-#     params_node_retina = data['Retina']
+#     params_node_retina = data_sns_toolbox['Retina']
 #     for i in range(num_cols):
 #         add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='R_'+suffixes[i],
 #                            invert=params_node_retina['params']['invert'],
@@ -511,8 +511,8 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #     ####################################################################################################################
 #     LAMINA
 #     """
-#     params_conn_l1 = data['L1Conn']
-#     params_conn_l3 = data['L3Conn']
+#     params_conn_l1 = data_sns_toolbox['L1Conn']
+#     params_conn_l3 = data_sns_toolbox['L3Conn']
 #
 #     r_l1_g = params_conn_l1['g']['center']
 #     r_l1_reversal = params_conn_l1['reversal']['center']
@@ -523,7 +523,7 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #
 #     synapse_r_l3 = NonSpikingSynapse(max_conductance=r_l3_g, reversal_potential=r_l3_reversal, e_lo=0.0, e_hi=activity_range)
 #
-#     params_node_l1 = data['L1']
+#     params_node_l1 = data_sns_toolbox['L1']
 #     for i in range(num_cols):
 #         add_scaled_bandpass_filter(net, params_node_l1['params']['cutoffLow'], params_node_l1['params']['cutoffHigh'],
 #                                    params_node_l1['params']['gain'], invert=params_node_l1['params']['invert'],
@@ -531,7 +531,7 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #         net.add_connection(synapse_r_l1, 'R_'+suffixes[i], 'L1_'+suffixes[i]+'_in')
 #         net.add_output('L1_'+suffixes[i]+'_out', name='OutL1_'+suffixes[i])
 #
-#     params_node_l3 = data['L3']
+#     params_node_l3 = data_sns_toolbox['L3']
 #     for i in range(num_cols):
 #         add_lowpass_filter(net, cutoff=params_node_l3['params']['cutoff'], name='L3_'+suffixes[i],
 #                            invert=params_node_l3['params']['invert'],
@@ -546,11 +546,11 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #     ####################################################################################################################
 #     MEDULLA ON
 #     """
-#     params_node_mi1 = data['Mi1']
-#     params_node_mi9 = data['Mi9']
+#     params_node_mi1 = data_sns_toolbox['Mi1']
+#     params_node_mi9 = data_sns_toolbox['Mi9']
 #
-#     params_conn_mi1 = data['Mi1Conn']
-#     params_conn_mi9 = data['Mi9Conn']
+#     params_conn_mi1 = data_sns_toolbox['Mi1Conn']
+#     params_conn_mi9 = data_sns_toolbox['Mi9Conn']
 #     for i in range(num_cols):
 #         add_lowpass_filter(net, cutoff=params_node_mi1['params']['cutoff'], name='Mi1_'+suffixes[i],
 #                            invert=params_node_mi1['params']['invert'], bias=params_node_mi1['params']['bias'],
@@ -576,11 +576,11 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #     ####################################################################################################################
 #     CT1 COMPARTMENTS
 #     """
-#     params_conn_ct1_on = data['CT1OnConn']
+#     params_conn_ct1_on = data_sns_toolbox['CT1OnConn']
 #     synapse_mi1_ct1on = NonSpikingSynapse(max_conductance=params_conn_ct1_on['g'],
 #                                           reversal_potential=params_conn_ct1_on['reversal'], e_lo=0.0,
 #                                           e_hi=activity_range)
-#     params_node_ct1_on = data['CT1On']
+#     params_node_ct1_on = data_sns_toolbox['CT1On']
 #     for i in range(num_cols):
 #         add_lowpass_filter(net, cutoff=params_node_ct1_on['params']['cutoff'], name='CT1_On_'+suffixes[i],
 #                            invert=params_node_ct1_on['params']['invert'], bias=params_node_ct1_on['params']['bias'],
@@ -593,8 +593,8 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #     ####################################################################################################################
 #     T4 CELLS
 #     """
-#     params_node_t4 = data['T4']
-#     params_conn_t4 = data['T4Conn']
+#     params_node_t4 = data_sns_toolbox['T4']
+#     params_conn_t4 = data_sns_toolbox['T4Conn']
 #
 #     # g_mi1_t4, rev_mi1_t4 = synapse_target(activity_range, 0.0)
 #     g_pd_t4, rev_pd_t4 = synapse_target(0.0, activity_range)
@@ -634,7 +634,7 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #     GATHER PROPERTIES
 #     """
 #     cutoffs = params[:-2]
-#     data = tune_neurons(cutoffs[:-1], 'off')
+#     data_sns_toolbox = tune_neurons(cutoffs[:-1], 'off')
 #     # c = params[-1]
 #
 #     """
@@ -649,7 +649,7 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #     RETINA
 #     """
 #
-#     params_node_retina = data['Retina']
+#     params_node_retina = data_sns_toolbox['Retina']
 #     for i in range(num_cols):
 #         add_lowpass_filter(net, params_node_retina['params']['cutoff'], name='R_'+suffixes[i],
 #                            invert=params_node_retina['params']['invert'],
@@ -664,8 +664,8 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #     ####################################################################################################################
 #     LAMINA
 #     """
-#     params_conn_l2 = data['L2Conn']
-#     params_conn_l3 = data['L3Conn']
+#     params_conn_l2 = data_sns_toolbox['L2Conn']
+#     params_conn_l3 = data_sns_toolbox['L3Conn']
 #
 #     r_l2_g = params_conn_l2['g']['center']
 #     r_l2_reversal = params_conn_l2['reversal']['center']
@@ -676,7 +676,7 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #
 #     synapse_r_l3 = NonSpikingSynapse(max_conductance=r_l3_g, reversal_potential=r_l3_reversal, e_lo=0.0, e_hi=activity_range)
 #
-#     params_node_l2 = data['L2']
+#     params_node_l2 = data_sns_toolbox['L2']
 #     for i in range(num_cols):
 #         add_scaled_bandpass_filter(net, params_node_l2['params']['cutoffLow'], params_node_l2['params']['cutoffHigh'],
 #                                    params_node_l2['params']['gain'], invert=params_node_l2['params']['invert'],
@@ -684,7 +684,7 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #         net.add_connection(synapse_r_l2, 'R_'+suffixes[i], 'L2_'+suffixes[i]+'_in')
 #         net.add_output('L2_'+suffixes[i]+'_out', name='OutL1_'+suffixes[i])
 #
-#     params_node_l3 = data['L3']
+#     params_node_l3 = data_sns_toolbox['L3']
 #     for i in range(num_cols):
 #         add_lowpass_filter(net, cutoff=params_node_l3['params']['cutoff'], name='L3_'+suffixes[i],
 #                            invert=params_node_l3['params']['invert'],
@@ -699,11 +699,11 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #     ####################################################################################################################
 #     MEDULLA OFF
 #     """
-#     params_node_tm1 = data['Tm1']
-#     params_node_tm9 = data['Tm9']
+#     params_node_tm1 = data_sns_toolbox['Tm1']
+#     params_node_tm9 = data_sns_toolbox['Tm9']
 #
-#     params_conn_tm1 = data['Tm1Conn']
-#     params_conn_tm9 = data['Tm9Conn']
+#     params_conn_tm1 = data_sns_toolbox['Tm1Conn']
+#     params_conn_tm9 = data_sns_toolbox['Tm9Conn']
 #     for i in range(num_cols):
 #         add_lowpass_filter(net, cutoff=params_node_tm1['params']['cutoff'], name='Tm1_'+suffixes[i],
 #                            invert=params_node_tm1['params']['invert'], bias=params_node_tm1['params']['bias'],
@@ -729,11 +729,11 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #     ####################################################################################################################
 #     CT1 COMPARTMENTS
 #     """
-#     params_conn_ct1_off = data['CT1OffConn']
+#     params_conn_ct1_off = data_sns_toolbox['CT1OffConn']
 #     synapse_tm1_ct1off = NonSpikingSynapse(max_conductance=params_conn_ct1_off['g'],
 #                                            reversal_potential=params_conn_ct1_off['reversal'], e_lo=0.0,
 #                                            e_hi=activity_range)
-#     params_node_ct1_off = data['CT1Off']
+#     params_node_ct1_off = data_sns_toolbox['CT1Off']
 #     for i in range(num_cols):
 #         add_lowpass_filter(net, cutoff=params_node_ct1_off['params']['cutoff'], name='CT1_Off_'+suffixes[i],
 #                            invert=params_node_ct1_off['params']['invert'], bias=params_node_ct1_off['params']['bias'],#+0.5,
@@ -746,8 +746,8 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 #     ####################################################################################################################
 #     T5 CELLS
 #     """
-#     # params_node_t4 = data['T4']
-#     # params_conn_t4 = data['T4Conn']
+#     # params_node_t4 = data_sns_toolbox['T4']
+#     # params_conn_t4 = data_sns_toolbox['T4Conn']
 #
 #     # g_mi1_t4, rev_mi1_t4 = synapse_target(activity_range, 0.0)
 #     # g_pd_t5, rev_pd_t5 = synapse_target(0.0, activity_range)

@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 def process_file(file_path, index, num_frames, scaled_width, scaled_height):
-    # Load the trial data
+    # Load the trial data_sns_toolbox
     data = pickle.load(open(file_path, 'rb'))
     print(index)
 
@@ -18,7 +18,7 @@ def process_file(file_path, index, num_frames, scaled_width, scaled_height):
     # Skip trials where there is no change over the course of the trial
     no_change = all(np.array_equal(i, images[0]) for i in images)
     if no_change:
-        print('No change in image data')
+        print('No change in image data_sns_toolbox')
         return None, None, None
 
     left_frames = []
@@ -60,7 +60,7 @@ def process_files_in_directory(directory_path):
                 data = np.concatenate([data, data_left, data_right], axis=3)
                 labels = np.hstack([labels, np.array([vel])])
 
-    dataset = {'data': data, 'labels': labels}
+    dataset = {'data_sns_toolbox': data, 'labels': labels}
     pickle.dump(dataset, open('dataset.p', 'wb'))
 
 directory_path = '../FlyWheelTrials/'

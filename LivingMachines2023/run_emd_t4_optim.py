@@ -122,7 +122,7 @@ def easy_neg_log_prior(num_params: int) -> pypesto.objective.NegLogParameterPrio
 
 def save_estimated_data(result_sampler: pypesto.Result) -> None:
     """
-    save estimated data in hdf5
+    save estimated data_sns_toolbox in hdf5
     @param result_sampler: sample results
     @return: None
     """
@@ -220,7 +220,7 @@ def run_t4_estimation(dt, freqs, stims, device) -> pypesto.Result:
         # pypesto.sample.geweke_test(result=result_sampler)
         print('finished result sampler')
         save_estimated_data(result_sampler)  # TODO: comes from somewhere
-        print('saved data')
+        print('saved data_sns_toolbox')
         return result_sampler
     except Exception as e:
         logging.exception(e)

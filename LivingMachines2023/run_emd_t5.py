@@ -52,9 +52,9 @@ def test_emd(dt, model, net, stim, interval):
             j = 0
     # else:
     #     for i in range(len(t)):
-    #         data[i, :] = model(stim[i, :])
+    #         data_sns_toolbox[i, :] = model(stim[i, :])
 
-    # data = data.to('cpu')
+    # data_sns_toolbox = data_sns_toolbox.to('cpu')
     data = data.transpose()
     r_l = data[0, :]
     r_c = data[1, :]

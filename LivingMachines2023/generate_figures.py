@@ -107,7 +107,7 @@ Best EMD Results
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Best EMD Parameters
 # """
-# def setup_number_line(ax, title, unit, data):
+# def setup_number_line(ax, title, unit, data_sns_toolbox):
 #     # only show the bottom spine
 #     ax.yaxis.set_major_locator(ticker.NullLocator())
 #     # ax.spines[['left', 'right', 'top']].set_visible(False)
@@ -122,7 +122,7 @@ Best EMD Results
 #     # ax.text(0.0, 0.2, title, transform=ax.transAxes, color='black')
 #     ax.xaxis.set_major_formatter('{x:.2f} %s'%unit)
 #     ax.set_title(title)
-#     # ax.hlines(y=0, xmin=min(data), xmax=max(data), colors='black')
+#     # ax.hlines(y=0, xmin=min(data_sns_toolbox), xmax=max(data_sns_toolbox), colors='black')
 #
 #
 # def plot_best_emd_parameters(best_data, num_best, name, param_units, filetype=None):
@@ -177,7 +177,7 @@ Best EMD Results
 #     nlp = (le_data['neglogpost'])  # .sample(n=sample_size)
 #
 #     cols_to_use = [col for col in le_data.columns if col != 'neglogpost']
-#     g = sea.PairGrid(data=le_data, height=10, vars=cols_to_use)
+#     g = sea.PairGrid(data_sns_toolbox=le_data, height=10, vars=cols_to_use)
 #     g.map_offdiag(sea.scatterplot, alpha=alpha, hue=nlp, hue_norm=norm, palette=the_cmap,
 #                   legend=False)
 #     g.map_diag(sea.histplot, kde=True)
@@ -187,7 +187,7 @@ Best EMD Results
 #     blue = sea.color_palette('colorblind')[0]
 #     markersize = mpl.rcParams['lines.markersize'] ** 2
 #     cols_to_use = [col for col in best_df.columns if col != 'neglogpost']
-#     g.data = best_df
+#     g.data_sns_toolbox = best_df
 #     g.map_offdiag(sea.scatterplot, alpha=1, color=blue, marker='*', s=100*markersize, legend=False)
 #
 #     if filetype is None:
@@ -572,7 +572,7 @@ def bp_traces(colors):
 
     t = saved['t']
     inp = saved['inp']
-    data = saved['data']
+    data = saved['data_sns_toolbox']
 
     plt.figure()
     plt.plot(t, inp, color=colors['in'], label='Input')

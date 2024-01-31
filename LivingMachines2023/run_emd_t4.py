@@ -43,9 +43,9 @@ def test_emd(dt, model, net, stim, interval):
             j = 0
     # else:
     #     for i in range(len(t)):
-    #         data[i, :] = model(stim[i, :])
+    #         data_sns_toolbox[i, :] = model(stim[i, :])
 
-    # data = data.to('cpu')
+    # data_sns_toolbox = data_sns_toolbox.to('cpu')
     data = data.transpose()
     r_l = data[0, :]
     r_c = data[1, :]
@@ -166,7 +166,7 @@ def t4_freq_response(stim, vels, params, dt, plot=False, save=True):
     param_string = '_%i_%i_%i_%i_%i'%(cutoff_fast, cutoff_low, cutoff_ct1, cutoff_mi9, c_inv)
     if plot:
         filetype = '.svg'
-        # plt.savefig(dir+'data'+param_string+filetype, dpi=dpi)
+        # plt.savefig(dir+'data_sns_toolbox'+param_string+filetype, dpi=dpi)
 
         fig1 = plt.figure(figsize=size, dpi=dpi)
         # print(fig1.dpi)
@@ -193,7 +193,7 @@ def t4_freq_response(stim, vels, params, dt, plot=False, save=True):
                 'b_peaks':  b_peaks,
                 'ratios':   ratios}
         filename = dir + 'set' + param_string + '.pc'
-        # save_data(data, filename)
+        # save_data(data_sns_toolbox, filename)
 
 def init():
     sea.set_theme()

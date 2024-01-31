@@ -34,7 +34,7 @@ for i in tqdm(range(len(t))):
 
 data = data.transpose()
 
-save_file = {'t': t, 'inp': inp, 'data': data}
+save_file = {'t': t, 'inp': inp, 'data_sns_toolbox': data}
 
 save_data(save_file, 'bp_step_response.pc')
 

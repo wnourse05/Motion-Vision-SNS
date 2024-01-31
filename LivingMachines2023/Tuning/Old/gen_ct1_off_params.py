@@ -52,7 +52,7 @@ def run_net(g, cutoff, params_node_retina, params_node_l2, params_conn_tm1, para
 
     for i in range(len(t)):
         data[i] = model(inputs[i, :])
-    # plt.plot(t, data, label=str(bias))
+    # plt.plot(t, data_sns_toolbox, label=str(bias))
 
     return np.max(data)
 

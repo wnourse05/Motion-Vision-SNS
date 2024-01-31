@@ -5,9 +5,9 @@ from PIL import Image
 
 rng = np.random.default_rng(seed=0) # Random number generator
 
-data = pickle.load(open('dataset.p', 'rb')) # Load data
+data = pickle.load(open('dataset.p', 'rb')) # Load data_sns_toolbox
 
-images = np.moveaxis(data['data'],0,2)  # Pull image data, and reorder axes
+images = np.moveaxis(data['data_sns_toolbox'],0,2)  # Pull image data_sns_toolbox, and reorder axes
 
 labels = np.repeat(data['labels'], 2)    # Double the labels, because the dataset has left and right split
 # i_sorted = np.argsort(labels)
@@ -73,8 +73,8 @@ for i in range(num_samples):
 print(len(labels_test))
 print(len(labels_train))
 
-data_train = {'data':set_train, 'labels': labels_train}
-data_test = {'data':set_test, 'labels': labels_test}
+data_train = {'data_sns_toolbox':set_train, 'labels': labels_train}
+data_test = {'data_sns_toolbox':set_test, 'labels': labels_test}
 
 pickle.dump(data_test, open('set_test.p', 'wb'))
 pickle.dump(data_train, open('set_train.p', 'wb'))

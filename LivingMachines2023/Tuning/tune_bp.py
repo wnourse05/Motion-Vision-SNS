@@ -33,7 +33,7 @@ def run_net(k, cutoff_fast, cutoff_low):
 
     for i in range(len(t)):
         data[i] = model(inputs[i, :])
-    # plt.plot(t, data, label=str(k))
+    # plt.plot(t, data_sns_toolbox, label=str(k))
 
     return np.min(data)
 

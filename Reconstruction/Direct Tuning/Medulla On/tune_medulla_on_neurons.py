@@ -9,7 +9,7 @@ from sns_toolbox.networks import Network
 from sns_toolbox.neurons import NonSpikingNeuron
 from sns_toolbox.connections import NonSpikingSynapse
 
-# Personal stuff to send an email once data collection is finished
+# Personal stuff to send an email once data_sns_toolbox collection is finished
 sys.path.extend(['/home/will'])
 from email_utils import send_email
 

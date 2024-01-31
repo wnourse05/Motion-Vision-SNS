@@ -59,7 +59,7 @@ def run_net(conductance_retina):
     for i in range(len(t)):
         data[i] = model([activity_range])
 
-    # plt.plot(t, data)
+    # plt.plot(t, data_sns_toolbox)
     peak = np.min(data)
 
     return peak

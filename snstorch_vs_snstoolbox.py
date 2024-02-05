@@ -1,6 +1,7 @@
 from LivingMachines2023.utilities import load_data
 from LivingMachines2023.motion_vision_networks import gen_motion_vision
 import torch
+import torch.nn as nn
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -190,14 +191,14 @@ def collect_data_sns_toolbox(vel, angle, stims, center=False, params=None, scale
     # stim = torch.vstack((stims['%i'%angle], stims['%i'%angle], stims['%i'%angle], stims['%i'%angle])).to(device)
     stim = torch.vstack((stims['%i' % angle],)).to(device)
     data = run_sns_toolbox(model, net, stim, device, flat_size, dt, interval)
-    return data
+    return data, net
 
 stims = get_stimulus()
 
 # EMD Behavior
 vel = 30.0
 angle = 0
-data_sns_toolbox = collect_data_sns_toolbox(vel, angle, stims, center=True, scale=False)
+data_sns_toolbox, net = collect_data_sns_toolbox(vel, angle, stims, center=True, scale=False)
 
 # data_sns_toolbox = {'t': t,
 #             'inp': single_inp,
@@ -213,6 +214,12 @@ data_sns_toolbox = collect_data_sns_toolbox(vel, angle, stims, center=True, scal
 #             'on_b': single_on_b,
 #             'off_a': single_off_a,
 #             'off_b': single_off_b}
+
+dtype = torch.float32
+device = 'cpu'
+params = nn.ParameterDict({
+
+})
 
 plt.figure()
 plt.plot(data_sns_toolbox['t'], data_sns_toolbox['inp'][1, :], label='sns-toolbox')

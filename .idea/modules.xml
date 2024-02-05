@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/Motion-Vision-SNS.iml" filepath="$PROJECT_DIR$/.idea/Motion-Vision-SNS.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../SNSTorch/.idea/SNSTorch.iml" filepath="$PROJECT_DIR$/../SNSTorch/.idea/SNSTorch.iml" />
     </modules>
   </component>
 </project>

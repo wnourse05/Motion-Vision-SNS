@@ -5,6 +5,7 @@ import torch.nn as nn
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from motion_vision_net import SNSMotionVisionEye
 
 def get_stimulus():
     frame_0 = torch.tensor([[1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0],
@@ -193,7 +194,9 @@ def collect_data_sns_toolbox(vel, angle, stims, center=False, params=None, scale
     data = run_sns_toolbox(model, net, stim, device, flat_size, dt, interval)
     return data, net
 
+
 stims = get_stimulus()
+params_sns = load_data('LivingMachines2023/params_net_20230327.pc')
 
 # EMD Behavior
 vel = 30.0
@@ -217,12 +220,91 @@ data_sns_toolbox, net = collect_data_sns_toolbox(vel, angle, stims, center=True,
 
 dtype = torch.float32
 device = 'cpu'
-params = nn.ParameterDict({
 
+interval = convert_deg_vel_to_interval(vel, params_sns['dt'])
+stim = torch.vstack((stims['%i' % angle],)).to(device)
+
+params = nn.ParameterDict({
+    'reversalEx': nn.Parameter(torch.tensor([5.0], dtype=dtype).to(device)),
+    'reversalIn': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device)),
+    'reversalMod': nn.Parameter(torch.tensor([0.0], dtype=dtype).to(device)),
+    'freqFast': nn.Parameter(torch.tensor([params_sns['in']['cutoff']],dtype=dtype).to(device)),
+    'kernelConductanceInBO': nn.Parameter(torch.tensor([params_sns['bp']['g']['center']], dtype=dtype).to(device)),
+    'kernelReversalInBO': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device)),
+    'freqBOFast': nn.Parameter(torch.tensor([params_sns['bp']['cutoffHigh']],dtype=dtype).to(device)),
+    'freqBOSlow': nn.Parameter(torch.tensor([params_sns['bp']['cutoffLow']],dtype=dtype).to(device)),
+    'kernelConductanceInL': nn.Parameter(torch.tensor([params_sns['lp']['g']['center']], dtype=dtype).to(device)),
+    'kernelReversalInL': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device)),
+    'freqL': nn.Parameter(torch.tensor([params_sns['in']['cutoff']],dtype=dtype).to(device)),
+    'kernelConductanceInBF': nn.Parameter(torch.tensor([params_sns['bp']['g']['center']], dtype=dtype).to(device)),
+    'kernelReversalInBF': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device)),
+    'freqBFFast': nn.Parameter(torch.tensor([params_sns['bp']['cutoffHigh']],dtype=dtype).to(device)),
+    'freqBFSlow': nn.Parameter(torch.tensor([params_sns['bp']['cutoffLow']],dtype=dtype).to(device)),
 })
+model_torch = SNSMotionVisionEye(params_sns['dt'],(7,7), 1, params=params, dtype=dtype, device=device)
+
+num_samples = stim.shape[0]
+t = np.linspace(0, params_sns['dt'] * num_samples * interval, num=num_samples * interval)
+data_in = torch.zeros(num_samples*interval, device=device)
+data_bo = torch.zeros(num_samples*interval, device=device)
+data_l = torch.zeros(num_samples*interval, device=device)
+data_bf = torch.zeros(num_samples*interval, device=device)
+data = [data_in, data_bo, data_l, data_bf]
+
+stim_example = torch.zeros([len(t),3])
+
+shape = [7,7]
+state_input = torch.zeros(shape, dtype=dtype).to(device)
+state_bp_on_input = torch.ones(shape, dtype=dtype).to(device)
+state_bp_on_fast = torch.zeros(shape, dtype=dtype).to(device)
+state_bp_on_slow = torch.zeros(shape, dtype=dtype).to(device)
+state_bp_on_output = torch.ones(shape, dtype=dtype).to(device)
+state_lowpass = torch.ones(shape, dtype=dtype).to(device)
+state_bp_off_input = torch.ones(shape, dtype=dtype).to(device)
+state_bp_off_fast = torch.zeros(shape, dtype=dtype).to(device)
+state_bp_off_slow = torch.zeros(shape, dtype=dtype).to(device)
+state_bp_off_output = torch.ones(shape, dtype=dtype).to(device)
+states = [state_input, state_bp_on_input, state_bp_on_fast, state_bp_on_slow, state_bp_on_output, state_lowpass,
+          state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output]
+
+def state_to_data(index, data, states):
+    data[0][index] = states[0][3,3]
+    # state_bp_on_input = states[1]
+    # state_bp_on_fast = states[2]
+    # state_bp_on_slow = states[3]
+    data[1][index] = states[4][3,3]
+    data[2][index] = states[5][3,3]
+    # state_bp_off_input = states[6]
+    # state_bp_off_fast = states[7]
+    # state_bp_off_slow = states[8]
+    data[3][index] = states[9][3,3]
+
+    return data
+
+index = 0
+j = 0
+for i in tqdm(range(len(t)), leave=False, colour='blue'):
+    if index < num_samples:
+        states = model_torch(torch.reshape(stim[index,:],(7,7)), states)
+        stim_example[i, 0] = stim[index, 23]
+        stim_example[i, 1] = stim[index, 24]
+        stim_example[i, 2] = stim[index, 25]
+    else:
+        states = model_torch(stim[-1,:], states)
+        stim_example[i,0] = stim[-1,23]
+        stim_example[i,1] = stim[-1,24]
+        stim_example[i,2] = stim[-1,25]
+    # j += 1
+    # if j == interval:
+    #     index += 1
+    #     j = 0
+    data = state_to_data(i, data, states)
+
+
 
 plt.figure()
 plt.plot(data_sns_toolbox['t'], data_sns_toolbox['inp'][1, :], label='sns-toolbox')
+plt.plot(data_sns_toolbox['t'], data[0], label='snsTorch')
 plt.title('Input')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
@@ -230,14 +312,24 @@ plt.legend()
 
 plt.figure()
 plt.plot(data_sns_toolbox['t'], data_sns_toolbox['bp'][1, :], label='sns-toolbox')
-plt.title('BP')
+plt.plot(data_sns_toolbox['t'], data[1], label='snsTorch')
+plt.title('BPO')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
 plt.legend()
 
 plt.figure()
 plt.plot(data_sns_toolbox['t'], data_sns_toolbox['lb'][1, :], label='sns-toolbox')
+plt.plot(data_sns_toolbox['t'], data[2], label='snsTorch')
 plt.title('LP')
+plt.xlabel('t (ms)')
+plt.ylabel('U (mV)')
+plt.legend()
+
+plt.figure()
+plt.plot(data_sns_toolbox['t'], data_sns_toolbox['bp'][1, :], label='sns-toolbox')
+plt.plot(data_sns_toolbox['t'], data[3], label='snsTorch')
+plt.title('BPF')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
 plt.legend()

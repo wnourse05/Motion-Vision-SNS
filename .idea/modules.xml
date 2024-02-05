@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/Motion-Vision-SNS.iml" filepath="$PROJECT_DIR$/.idea/Motion-Vision-SNS.iml" />
       <module fileurl="file://$PROJECT_DIR$/../SNSTorch/.idea/SNSTorch.iml" filepath="$PROJECT_DIR$/../SNSTorch/.idea/SNSTorch.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../SNSTorch/pythonProject/.idea/pythonProject.iml" filepath="$PROJECT_DIR$/../SNSTorch/pythonProject/.idea/pythonProject.iml" />
     </modules>
   </component>
 </project>

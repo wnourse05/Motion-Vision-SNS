@@ -128,7 +128,7 @@ def run_sns_toolbox(model, net, stim, device, size, dt, interval):
     single_lp = lp[index-1:index+2, :]
     del lp
     e = data[3*size:4*size, :]
-    single_e = e[index-1, :]
+    single_e = e[index, :]
     del e
     d_on = data[4*size:5*size, :]
     single_d_on = d_on[index, :]
@@ -137,7 +137,7 @@ def run_sns_toolbox(model, net, stim, device, size, dt, interval):
     single_d_off = d_off[index, :]
     del d_off
     s_on = data[6*size:7*size, :]
-    single_s_on = s_on[index+1, :]
+    single_s_on = s_on[index, :]
     del s_on
     s_off = data[7*size:8*size, :]
     single_s_off = s_off[index+1, :]
@@ -240,6 +240,12 @@ params = nn.ParameterDict({
     'kernelReversalInBF': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device)),
     'freqBFFast': nn.Parameter(torch.tensor([params_sns['bp']['cutoffHigh']],dtype=dtype).to(device)),
     'freqBFSlow': nn.Parameter(torch.tensor([params_sns['bp']['cutoffLow']],dtype=dtype).to(device)),
+    'conductanceLEO': nn.Parameter(torch.tensor([params_sns['e']['g']],dtype=dtype).to(device)),
+    'freqEO': nn.Parameter(torch.tensor([params_sns['e']['cutoff']],dtype=dtype).to(device)),
+    'conductanceBODO': nn.Parameter(torch.tensor([params_sns['d_on']['g']],dtype=dtype).to(device)),
+    'freqDO': nn.Parameter(torch.tensor([params_sns['d_on']['cutoff']],dtype=dtype).to(device)),
+    'conductanceDOSO': nn.Parameter(torch.tensor([params_sns['s_on']['g']],dtype=dtype).to(device)),
+    'freqSO': nn.Parameter(torch.tensor([params_sns['s_on']['cutoff']],dtype=dtype).to(device)),
 })
 model_torch = SNSMotionVisionEye(params_sns['dt'],(7,7), 1, params=params, dtype=dtype, device=device)
 
@@ -249,7 +255,14 @@ data_in = torch.zeros(num_samples*interval, device=device)
 data_bo = torch.zeros(num_samples*interval, device=device)
 data_l = torch.zeros(num_samples*interval, device=device)
 data_bf = torch.zeros(num_samples*interval, device=device)
-data = [data_in, data_bo, data_l, data_bf]
+data_bo_in = torch.zeros(num_samples*interval, device=device)
+data_bo_fast = torch.zeros(num_samples*interval, device=device)
+data_bo_slow = torch.zeros(num_samples*interval, device=device)
+data_enhance_on = torch.zeros(num_samples*interval, device=device)
+data_direct_on = torch.zeros(num_samples*interval, device=device)
+data_suppress_on = torch.zeros(num_samples*interval, device=device)
+data = [data_in, data_bo, data_l, data_bf, data_bo_in, data_bo_fast, data_bo_slow, data_enhance_on, data_direct_on,
+        data_suppress_on]
 
 stim_example = torch.zeros([len(t),3])
 
@@ -264,47 +277,55 @@ state_bp_off_input = torch.ones(shape, dtype=dtype).to(device)
 state_bp_off_fast = torch.zeros(shape, dtype=dtype).to(device)
 state_bp_off_slow = torch.zeros(shape, dtype=dtype).to(device)
 state_bp_off_output = torch.ones(shape, dtype=dtype).to(device)
+state_enhance_on = torch.ones(shape, dtype=dtype).to(device)
+state_direct_on = torch.zeros(shape, dtype=dtype).to(device)
+state_suppress_on = torch.zeros(shape, dtype=dtype).to(device)
 states = [state_input, state_bp_on_input, state_bp_on_fast, state_bp_on_slow, state_bp_on_output, state_lowpass,
-          state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output]
+          state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output, state_enhance_on,
+          state_direct_on, state_suppress_on]
 
 def state_to_data(index, data, states):
     data[0][index] = states[0][3,3]
-    # state_bp_on_input = states[1]
-    # state_bp_on_fast = states[2]
-    # state_bp_on_slow = states[3]
+    # data[4][index] = states[1][3,3]
+    # data[5][index] = states[2][3,3]
+    # data[6][index] = states[3][3,3]
     data[1][index] = states[4][3,3]
     data[2][index] = states[5][3,3]
     # state_bp_off_input = states[6]
     # state_bp_off_fast = states[7]
     # state_bp_off_slow = states[8]
     data[3][index] = states[9][3,3]
+    data[4][index] = states[10][3,3]
+    data[5][index] = states[11][3,3]
+    data[6][index] = states[12][3,3]
 
     return data
 
 index = 0
 j = 0
-for i in tqdm(range(len(t)), leave=False, colour='blue'):
-    if index < num_samples:
-        states = model_torch(torch.reshape(stim[index,:],(7,7)), states)
-        stim_example[i, 0] = stim[index, 23]
-        stim_example[i, 1] = stim[index, 24]
-        stim_example[i, 2] = stim[index, 25]
-    else:
-        states = model_torch(stim[-1,:], states)
-        stim_example[i,0] = stim[-1,23]
-        stim_example[i,1] = stim[-1,24]
-        stim_example[i,2] = stim[-1,25]
-    # j += 1
-    # if j == interval:
-    #     index += 1
-    #     j = 0
-    data = state_to_data(i, data, states)
+with torch.no_grad():
+    for i in tqdm(range(len(t)), leave=False, colour='blue'):
+        if index < num_samples:
+            states = model_torch(torch.reshape(stim[index,:],(7,7)), states)
+            stim_example[i, 0] = stim[index, 23]
+            stim_example[i, 1] = stim[index, 24]
+            stim_example[i, 2] = stim[index, 25]
+        else:
+            states = model_torch(stim[-1,:], states)
+            stim_example[i,0] = stim[-1,23]
+            stim_example[i,1] = stim[-1,24]
+            stim_example[i,2] = stim[-1,25]
+        j += 1
+        if j == interval:
+            index += 1
+            j = 0
+        data = state_to_data(i, data, states)
 
 
 
 plt.figure()
 plt.plot(data_sns_toolbox['t'], data_sns_toolbox['inp'][1, :], label='sns-toolbox')
-plt.plot(data_sns_toolbox['t'], data[0], label='snsTorch')
+plt.plot(data_sns_toolbox['t'], data[0].detach().numpy(), label='snsTorch')
 plt.title('Input')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
@@ -312,7 +333,7 @@ plt.legend()
 
 plt.figure()
 plt.plot(data_sns_toolbox['t'], data_sns_toolbox['bp'][1, :], label='sns-toolbox')
-plt.plot(data_sns_toolbox['t'], data[1], label='snsTorch')
+plt.plot(data_sns_toolbox['t'], data[1].detach().numpy(), label='snsTorch')
 plt.title('BPO')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
@@ -320,7 +341,7 @@ plt.legend()
 
 plt.figure()
 plt.plot(data_sns_toolbox['t'], data_sns_toolbox['lb'][1, :], label='sns-toolbox')
-plt.plot(data_sns_toolbox['t'], data[2], label='snsTorch')
+plt.plot(data_sns_toolbox['t'], data[2].detach().numpy(), label='snsTorch')
 plt.title('LP')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
@@ -328,8 +349,32 @@ plt.legend()
 
 plt.figure()
 plt.plot(data_sns_toolbox['t'], data_sns_toolbox['bp'][1, :], label='sns-toolbox')
-plt.plot(data_sns_toolbox['t'], data[3], label='snsTorch')
+plt.plot(data_sns_toolbox['t'], data[3].detach().numpy(), label='snsTorch')
 plt.title('BPF')
+plt.xlabel('t (ms)')
+plt.ylabel('U (mV)')
+plt.legend()
+
+plt.figure()
+plt.plot(data_sns_toolbox['t'], data_sns_toolbox['e_on'], label='sns-toolbox')
+plt.plot(data_sns_toolbox['t'], data[4].detach().numpy(), label='snsTorch')
+plt.title('EO')
+plt.xlabel('t (ms)')
+plt.ylabel('U (mV)')
+plt.legend()
+
+plt.figure()
+plt.plot(data_sns_toolbox['t'], data_sns_toolbox['d_on'], label='sns-toolbox')
+plt.plot(data_sns_toolbox['t'], data[5].detach().numpy(), label='snsTorch')
+plt.title('DO')
+plt.xlabel('t (ms)')
+plt.ylabel('U (mV)')
+plt.legend()
+
+plt.figure()
+plt.plot(data_sns_toolbox['t'], data_sns_toolbox['s_on'], label='sns-toolbox')
+plt.plot(data_sns_toolbox['t'], data[6].detach().numpy(), label='snsTorch')
+plt.title('SO')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
 plt.legend()

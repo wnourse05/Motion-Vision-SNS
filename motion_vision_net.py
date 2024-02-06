@@ -40,6 +40,7 @@ class SNSBandpass(nn.Module):
             self.params.update(params)
 
         k = 1.0
+        k = 1.141306594552181
         activity_range = 1.0
         g_in = (-activity_range) / self.params['reversalIn']
         g_bd = (-k * activity_range) / (self.params['reversalIn'] + k * activity_range)
@@ -104,7 +105,7 @@ class SNSBandpass(nn.Module):
         fast2out = self.syn_fast_output(state_fast, state_output)
         slow2out = self.syn_slow_output(state_slow, state_output)
 
-        state_input = (x, state_input)
+        state_input = self.input(x, state_input)
         state_fast = self.fast(input2fast, state_fast)
         state_slow = self.slow(input2slow, state_slow)
         state_output = self.output(fast2out+slow2out, state_output)
@@ -132,6 +133,12 @@ class SNSMotionVisionEye(nn.Module):
             'kernelReversalInBF': nn.Parameter((2*torch.rand(shape_field, generator=generator)-1).to(device)),
             'freqBFFast': nn.Parameter(torch.rand(1,dtype=dtype, generator=generator).to(device)*1000),
             'freqBFSlow': nn.Parameter(torch.rand(1,dtype=dtype, generator=generator).to(device)*1000),
+            'conductanceLEO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqEO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'conductanceBODO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqDO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'conductanceDOSO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqSO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
         })
         if params is not None:
             self.params.update(params)
@@ -239,6 +246,57 @@ class SNSMotionVisionEye(nn.Module):
         })
         self.bandpass_off = SNSBandpass(shape_post_conv, params=nrn_bf_params, device=device, dtype=dtype)
 
+        # Medulla
+        # On
+        # EO
+        syn_l_eo_params = nn.ParameterDict({
+            'conductance': self.params['conductanceLEO'],
+            'reversal': self.params['reversalEx']
+        })
+        self.syn_lowpass_enhance_on = m.NonSpikingChemicalSynapseElementwise(params=syn_l_eo_params, device=device,
+                                                                             dtype=dtype)
+        tau_eo = dt / __calc_cap_from_cutoff__(self.params['freqEO'].data)
+        nrn_eo_params = nn.ParameterDict({
+            'tau': nn.Parameter((tau_eo + torch.zeros(shape_post_conv, dtype=dtype)).to(device), requires_grad=False),
+            'leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'rest': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'init': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+        })
+        self.enhance_on = m.NonSpikingLayer(shape_post_conv, params=nrn_eo_params, device=device, dtype=dtype)
+        # DO
+        syn_bo_do_params = nn.ParameterDict({
+            'conductance': self.params['conductanceBODO'],
+            'reversal': self.params['reversalIn']
+        })
+        self.syn_bandpass_on_direct_on = m.NonSpikingChemicalSynapseElementwise(params=syn_bo_do_params, device=device,
+                                                                                dtype=dtype)
+        tau_do = dt / __calc_cap_from_cutoff__(self.params['freqDO'].data)
+        nrn_do_params = nn.ParameterDict({
+            'tau': nn.Parameter((tau_do + torch.zeros(shape_post_conv, dtype=dtype)).to(device), requires_grad=False),
+            'leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'rest': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(1.0921092205690466 + torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+        })
+        self.direct_on = m.NonSpikingLayer(shape_post_conv, params=nrn_do_params, device=device, dtype=dtype)
+        # SO
+        syn_do_so_params = nn.ParameterDict({
+            'conductance': self.params['conductanceDOSO'],
+            'reversal': self.params['reversalEx']
+        })
+        self.syn_direct_on_suppress_on = m.NonSpikingChemicalSynapseElementwise(params=syn_do_so_params, device=device,
+                                                                                dtype=dtype)
+        tau_so = dt / __calc_cap_from_cutoff__(self.params['freqSO'].data)
+        nrn_so_params = nn.ParameterDict({
+            'tau': nn.Parameter((tau_so + torch.zeros(shape_post_conv, dtype=dtype)).to(device), requires_grad=False),
+            'leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'rest': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+        })
+        self.suppress_on = m.NonSpikingLayer(shape_post_conv, params=nrn_so_params, device=device, dtype=dtype)
+
     def forward(self, x, states):
         state_input = states[0]
         state_bp_on_input = states[1]
@@ -250,23 +308,35 @@ class SNSMotionVisionEye(nn.Module):
         state_bp_off_fast = states[7]
         state_bp_off_slow = states[8]
         state_bp_off_output = states[9]
+        state_enhance_on = states[10]
+        state_direct_on = states[11]
+        state_suppress_on = states[12]
 
         # Synaptic updates
         syn_input_bandpass_on = self.syn_input_bandpass_on(state_input, state_bp_on_input)
         syn_input_lowpass = self.syn_input_lowpass(state_input, state_lowpass)
         syn_input_bandpass_off = self.syn_input_bandpass_off(state_input, state_bp_off_input)
+        syn_lowpass_on_enhance_on = self.syn_lowpass_enhance_on(state_lowpass, state_enhance_on)
+        syn_bandpass_on_direct_on = self.syn_bandpass_on_direct_on(state_bp_on_output, state_direct_on)
+        syn_direct_on_suppress_on = self.syn_direct_on_suppress_on(state_direct_on, state_suppress_on)
 
         # Neural updates
-        state_input = self.input(x, state_input)
+        # print(x)
+        # print(state_input)
+        state_input = self.input(x.squeeze(), state_input)
 
         [state_bp_on_input, state_bp_on_fast, state_bp_on_slow, state_bp_on_output] = self.bandpass_on(
-            syn_input_bandpass_on, [state_bp_on_input, state_bp_on_fast, state_bp_on_slow, state_bp_on_output])
+            syn_input_bandpass_on.squeeze(), [state_bp_on_input, state_bp_on_fast, state_bp_on_slow, state_bp_on_output])
         state_lowpass = self.lowpass(torch.squeeze(syn_input_lowpass), state_lowpass)
         [state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output] = self.bandpass_off(
-            syn_input_bandpass_off, [state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output])
+            syn_input_bandpass_off.squeeze(), [state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output])
+        state_enhance_on = self.enhance_on(syn_lowpass_on_enhance_on, state_enhance_on)
+        state_direct_on = self.direct_on(syn_bandpass_on_direct_on, state_direct_on)
+        state_suppress_on = self.suppress_on(syn_direct_on_suppress_on, state_suppress_on)
 
         return [state_input, state_bp_on_input, state_bp_on_fast, state_bp_on_slow, state_bp_on_output,
-                state_lowpass, state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output]
+                state_lowpass, state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output,
+                state_enhance_on, state_direct_on, state_suppress_on]
 
         # # Medulla (On)
         # # Do

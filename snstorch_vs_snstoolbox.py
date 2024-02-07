@@ -39,6 +39,7 @@ def get_stimulus():
                             [1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0],
                             [1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0]])
     stim_0 = torch.vstack((torch.flatten(frame_0), torch.flatten(frame_1), torch.flatten(frame_2), torch.flatten(frame_3), torch.flatten(frame_4), torch.flatten(frame_5)))
+    stim_0_full = torch.cat((frame_0.unsqueeze(0), frame_1.unsqueeze(0), frame_2.unsqueeze(0), frame_3.unsqueeze(0), frame_4.unsqueeze(0), frame_5.unsqueeze(0)))
     stim_90 = torch.vstack((torch.flatten(torch.rot90(frame_0)), torch.flatten(torch.rot90(frame_1)), torch.flatten(torch.rot90(frame_2)), torch.flatten(torch.rot90(frame_3)), torch.flatten(torch.rot90(frame_4)), torch.flatten(torch.rot90(frame_5))))
     stim_180 = torch.flipud(stim_0)
     stim_270 = torch.flipud(stim_90)
@@ -81,7 +82,7 @@ def get_stimulus():
     stim_225 = torch.flipud(stim_45)
     stim_315 = torch.flipud(stim_135)
 
-    stims = {'0': stim_0, '45': stim_45, '90': stim_90, '135': stim_135, '180': stim_180, '225': stim_225, '270': stim_270, '315': stim_315}
+    stims = {'0': stim_0, '45': stim_45, '90': stim_90, '135': stim_135, '180': stim_180, '225': stim_225, '270': stim_270, '315': stim_315, 'full': stim_0_full}
 
     return stims
 
@@ -140,7 +141,7 @@ def run_sns_toolbox(model, net, stim, device, size, dt, interval):
     single_s_on = s_on[index, :]
     del s_on
     s_off = data[7*size:8*size, :]
-    single_s_off = s_off[index+1, :]
+    single_s_off = s_off[index, :]
     del s_off
     on_a = data[8*size:9*size, :]
     single_on_a = on_a[index, :]
@@ -201,33 +202,18 @@ params_sns = load_data('LivingMachines2023/params_net_20230327.pc')
 # EMD Behavior
 vel = 30.0
 angle = 0
-data_sns_toolbox, net = collect_data_sns_toolbox(vel, angle, stims, center=True, scale=False)
-
-# data_sns_toolbox = {'t': t,
-#             'inp': single_inp,
-#             'bp': single_bp,
-#             'lb': single_lp,
-#             'e_on': single_e,
-#             'd_on': single_d_on,
-#             's_on': single_s_on,
-#             'e_off': single_e,
-#             'd_off': single_d_off,
-#             's_off': single_s_off,
-#             'on_a': single_on_a,
-#             'on_b': single_on_b,
-#             'off_a': single_off_a,
-#             'off_b': single_off_b}
+# data_sns_toolbox, net = collect_data_sns_toolbox(vel, angle, stims, center=True, scale=False)
 
 dtype = torch.float32
-device = 'cpu'
+device = 'cuda'
 
 interval = convert_deg_vel_to_interval(vel, params_sns['dt'])
-stim = torch.vstack((stims['%i' % angle],)).to(device)
+stim = stims['full'].to(device)
 
 params = nn.ParameterDict({
     'reversalEx': nn.Parameter(torch.tensor([5.0], dtype=dtype).to(device)),
     'reversalIn': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device)),
-    'reversalMod': nn.Parameter(torch.tensor([0.0], dtype=dtype).to(device)),
+    'reversalMod': nn.Parameter(torch.tensor([-0.1], dtype=dtype).to(device)),
     'freqFast': nn.Parameter(torch.tensor([params_sns['in']['cutoff']],dtype=dtype).to(device)),
     'kernelConductanceInBO': nn.Parameter(torch.tensor([params_sns['bp']['g']['center']], dtype=dtype).to(device)),
     'kernelReversalInBO': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device)),
@@ -246,6 +232,18 @@ params = nn.ParameterDict({
     'freqDO': nn.Parameter(torch.tensor([params_sns['d_on']['cutoff']],dtype=dtype).to(device)),
     'conductanceDOSO': nn.Parameter(torch.tensor([params_sns['s_on']['g']],dtype=dtype).to(device)),
     'freqSO': nn.Parameter(torch.tensor([params_sns['s_on']['cutoff']],dtype=dtype).to(device)),
+    'conductanceLEF': nn.Parameter(torch.tensor([params_sns['e']['g']],dtype=dtype).to(device)),
+    'freqEF': nn.Parameter(torch.tensor([params_sns['e']['cutoff']],dtype=dtype).to(device)),
+    'conductanceBFDF': nn.Parameter(torch.tensor([params_sns['d_off']['g']],dtype=dtype).to(device)),
+    'freqDF': nn.Parameter(torch.tensor([params_sns['d_off']['cutoff']],dtype=dtype).to(device)),
+    'conductanceDFSF': nn.Parameter(torch.tensor([params_sns['s_off']['g']],dtype=dtype).to(device)),
+    'freqSF': nn.Parameter(torch.tensor([params_sns['s_off']['cutoff']],dtype=dtype).to(device)),
+    'conductanceEOOn': nn.Parameter(torch.tensor([params_sns['on']['g']['enhance']],dtype=dtype).to(device)),
+    'conductanceDOOn': nn.Parameter(torch.tensor([params_sns['on']['g']['direct']],dtype=dtype).to(device)),
+    'conductanceSOOn': nn.Parameter(torch.tensor([params_sns['on']['g']['suppress']],dtype=dtype).to(device)),
+    'conductanceEFOff': nn.Parameter(torch.tensor([params_sns['off']['g']['enhance']],dtype=dtype).to(device)),
+    'conductanceDFOff': nn.Parameter(torch.tensor([params_sns['off']['g']['direct']],dtype=dtype).to(device)),
+    'conductanceSFOff': nn.Parameter(torch.tensor([0.5],dtype=dtype).to(device)),
 })
 model_torch = SNSMotionVisionEye(params_sns['dt'],(7,7), 1, params=params, dtype=dtype, device=device)
 
@@ -261,12 +259,17 @@ data_bo_slow = torch.zeros(num_samples*interval, device=device)
 data_enhance_on = torch.zeros(num_samples*interval, device=device)
 data_direct_on = torch.zeros(num_samples*interval, device=device)
 data_suppress_on = torch.zeros(num_samples*interval, device=device)
+data_ccw_on = torch.zeros(num_samples*interval, device=device)
+data_cw_on = torch.zeros(num_samples*interval, device=device)
+data_ccw_off = torch.zeros(num_samples*interval, device=device)
+data_cw_off = torch.zeros(num_samples*interval, device=device)
 data = [data_in, data_bo, data_l, data_bf, data_bo_in, data_bo_fast, data_bo_slow, data_enhance_on, data_direct_on,
-        data_suppress_on]
+        data_suppress_on, data_ccw_on, data_cw_on, data_ccw_off, data_cw_off]
 
 stim_example = torch.zeros([len(t),3])
 
 shape = [7,7]
+shape_emd = [x - 2 for x in shape]
 state_input = torch.zeros(shape, dtype=dtype).to(device)
 state_bp_on_input = torch.ones(shape, dtype=dtype).to(device)
 state_bp_on_fast = torch.zeros(shape, dtype=dtype).to(device)
@@ -280,9 +283,17 @@ state_bp_off_output = torch.ones(shape, dtype=dtype).to(device)
 state_enhance_on = torch.ones(shape, dtype=dtype).to(device)
 state_direct_on = torch.zeros(shape, dtype=dtype).to(device)
 state_suppress_on = torch.zeros(shape, dtype=dtype).to(device)
+state_enhance_off = torch.ones(shape, dtype=dtype).to(device)
+state_direct_off = torch.zeros(shape, dtype=dtype).to(device)
+state_suppress_off = torch.zeros(shape, dtype=dtype).to(device)
+state_ccw_on = torch.zeros(shape_emd, dtype=dtype).to(device)
+state_cw_on = torch.zeros(shape_emd, dtype=dtype).to(device)
+state_ccw_off = torch.zeros(shape_emd, dtype=dtype).to(device)
+state_cw_off = torch.zeros(shape_emd, dtype=dtype).to(device)
 states = [state_input, state_bp_on_input, state_bp_on_fast, state_bp_on_slow, state_bp_on_output, state_lowpass,
           state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output, state_enhance_on,
-          state_direct_on, state_suppress_on]
+          state_direct_on, state_suppress_on, state_enhance_off, state_direct_off, state_suppress_off, state_ccw_on,
+          state_cw_on, state_ccw_off, state_cw_off]
 
 def state_to_data(index, data, states):
     data[0][index] = states[0][3,3]
@@ -298,7 +309,13 @@ def state_to_data(index, data, states):
     data[4][index] = states[10][3,3]
     data[5][index] = states[11][3,3]
     data[6][index] = states[12][3,3]
-
+    data[7][index] = states[13][3,3]
+    data[8][index] = states[14][3,3]
+    data[9][index] = states[15][3,3]
+    data[10][index] = states[16][2,2]
+    data[11][index] = states[17][2,2]
+    data[12][index] = states[18][2,2]
+    data[13][index] = states[19][2,2]
     return data
 
 index = 0
@@ -306,75 +323,151 @@ j = 0
 with torch.no_grad():
     for i in tqdm(range(len(t)), leave=False, colour='blue'):
         if index < num_samples:
-            states = model_torch(torch.reshape(stim[index,:],(7,7)), states)
-            stim_example[i, 0] = stim[index, 23]
-            stim_example[i, 1] = stim[index, 24]
-            stim_example[i, 2] = stim[index, 25]
+            states = model_torch(stim[index,:,:], states)
+            # stim_example[i, 0] = stim[index, 23]
+            # stim_example[i, 1] = stim[index, 24]
+            # stim_example[i, 2] = stim[index, 25]
         else:
-            states = model_torch(stim[-1,:], states)
-            stim_example[i,0] = stim[-1,23]
-            stim_example[i,1] = stim[-1,24]
-            stim_example[i,2] = stim[-1,25]
+            states = model_torch(stim[-1,:,:], states)
+            # stim_example[i,0] = stim[-1,23]
+            # stim_example[i,1] = stim[-1,24]
+            # stim_example[i,2] = stim[-1,25]
         j += 1
         if j == interval:
             index += 1
             j = 0
         data = state_to_data(i, data, states)
 
-
+toolbox = True
+if toolbox:
+    data_sns_toolbox, net = collect_data_sns_toolbox(vel, angle, stims, center=True, scale=False)
 
 plt.figure()
-plt.plot(data_sns_toolbox['t'], data_sns_toolbox['inp'][1, :], label='sns-toolbox')
-plt.plot(data_sns_toolbox['t'], data[0].detach().numpy(), label='snsTorch')
+num_rows = 2
+num_cols = 7
+
+plt.subplot(num_rows, num_cols, 1)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['inp'][1, :], label='sns-toolbox')
+plt.plot(t, data[0].detach().to('cpu').numpy(), label='snsTorch')
 plt.title('Input')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
 plt.legend()
 
-plt.figure()
-plt.plot(data_sns_toolbox['t'], data_sns_toolbox['bp'][1, :], label='sns-toolbox')
-plt.plot(data_sns_toolbox['t'], data[1].detach().numpy(), label='snsTorch')
+plt.subplot(num_rows, num_cols, 2)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['bp'][1, :], label='sns-toolbox')
+plt.plot(t, data[1].detach().to('cpu').numpy(), label='snsTorch')
 plt.title('BPO')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
 plt.legend()
 
-plt.figure()
-plt.plot(data_sns_toolbox['t'], data_sns_toolbox['lb'][1, :], label='sns-toolbox')
-plt.plot(data_sns_toolbox['t'], data[2].detach().numpy(), label='snsTorch')
+plt.subplot(num_rows, num_cols, 3)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['lb'][1, :], label='sns-toolbox')
+plt.plot(t, data[2].detach().to('cpu').numpy(), label='snsTorch')
 plt.title('LP')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
 plt.legend()
 
-plt.figure()
-plt.plot(data_sns_toolbox['t'], data_sns_toolbox['bp'][1, :], label='sns-toolbox')
-plt.plot(data_sns_toolbox['t'], data[3].detach().numpy(), label='snsTorch')
+plt.subplot(num_rows, num_cols, 4)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['bp'][1, :], label='sns-toolbox')
+plt.plot(t, data[3].detach().to('cpu').numpy(), label='snsTorch')
 plt.title('BPF')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
 plt.legend()
 
-plt.figure()
-plt.plot(data_sns_toolbox['t'], data_sns_toolbox['e_on'], label='sns-toolbox')
-plt.plot(data_sns_toolbox['t'], data[4].detach().numpy(), label='snsTorch')
+plt.subplot(num_rows, num_cols, 5)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['e_on'], label='sns-toolbox')
+plt.plot(t, data[4].detach().to('cpu').numpy(), label='snsTorch')
 plt.title('EO')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
 plt.legend()
 
-plt.figure()
-plt.plot(data_sns_toolbox['t'], data_sns_toolbox['d_on'], label='sns-toolbox')
-plt.plot(data_sns_toolbox['t'], data[5].detach().numpy(), label='snsTorch')
+plt.subplot(num_rows, num_cols, 6)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['d_on'], label='sns-toolbox')
+plt.plot(t, data[5].detach().to('cpu').numpy(), label='snsTorch')
 plt.title('DO')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
 plt.legend()
 
-plt.figure()
-plt.plot(data_sns_toolbox['t'], data_sns_toolbox['s_on'], label='sns-toolbox')
-plt.plot(data_sns_toolbox['t'], data[6].detach().numpy(), label='snsTorch')
+plt.subplot(num_rows, num_cols, 7)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['s_on'], label='sns-toolbox')
+plt.plot(t, data[6].detach().to('cpu').numpy(), label='snsTorch')
 plt.title('SO')
+plt.xlabel('t (ms)')
+plt.ylabel('U (mV)')
+plt.legend()
+
+plt.subplot(num_rows, num_cols, 8)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['e_off'], label='sns-toolbox')
+plt.plot(t, data[7].detach().to('cpu').numpy(), label='snsTorch')
+plt.title('EF')
+plt.xlabel('t (ms)')
+plt.ylabel('U (mV)')
+plt.legend()
+
+plt.subplot(num_rows, num_cols, 9)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['d_off'], label='sns-toolbox')
+plt.plot(t, data[8].detach().to('cpu').numpy(), label='snsTorch')
+plt.title('DF')
+plt.xlabel('t (ms)')
+plt.ylabel('U (mV)')
+plt.legend()
+
+plt.subplot(num_rows, num_cols, 10)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['s_off'], label='sns-toolbox')
+plt.plot(t, data[9].detach().to('cpu').numpy(), label='snsTorch')
+plt.title('SF')
+plt.xlabel('t (ms)')
+plt.ylabel('U (mV)')
+plt.legend()
+
+plt.subplot(num_rows, num_cols, 11)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['on_b'], label='sns-toolbox')
+plt.plot(t, data[10].detach().to('cpu').numpy(), label='snsTorch')
+plt.title('CCW On')
+plt.xlabel('t (ms)')
+plt.ylabel('U (mV)')
+plt.legend()
+
+plt.subplot(num_rows, num_cols, 12)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['on_a'], label='sns-toolbox')
+plt.plot(t, data[11].detach().to('cpu').numpy(), label='snsTorch')
+plt.title('CCW On')
+plt.xlabel('t (ms)')
+plt.ylabel('U (mV)')
+plt.legend()
+
+plt.subplot(num_rows, num_cols, 13)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['off_b'], label='sns-toolbox')
+plt.plot(t, data[12].detach().to('cpu').numpy(), label='snsTorch')
+plt.title('CCW Off')
+plt.xlabel('t (ms)')
+plt.ylabel('U (mV)')
+plt.legend()
+
+plt.subplot(num_rows, num_cols, 14)
+if toolbox:
+    plt.plot(data_sns_toolbox['t'], data_sns_toolbox['off_a'], label='sns-toolbox')
+plt.plot(t, data[13].detach().to('cpu').numpy(), label='snsTorch')
+plt.title('CCW Off')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
 plt.legend()

@@ -2,12 +2,15 @@ from snstorch import modules as m
 import torch
 import torch.nn as nn
 import numpy as np
+import torch.autograd.profiler as profiler
+from typing import List
+import torch.jit as jit
 
 def __calc_cap_from_cutoff__(cutoff):
     cap = 1000/(2*np.pi*cutoff)
     return cap
 
-class SNSBandpass(nn.Module):
+class SNSBandpass(jit.ScriptModule):
     def __init__(self, shape, params=None, device=None, dtype=torch.float32, generator=None):
         super().__init__()
         if device is None:
@@ -53,6 +56,7 @@ class SNSBandpass(nn.Module):
             'init': self.params['input_init']
         })
         self.input = m.NonSpikingLayer(shape, params=params_input, device=device, dtype=dtype)
+        self.state_input = torch.zeros(shape, dtype=dtype, device=device)+self.params['input_init']
         params_input_syn = nn.ParameterDict({
             'conductance': g_in,
             'reversal': self.params['reversalIn']
@@ -66,6 +70,7 @@ class SNSBandpass(nn.Module):
             'init': self.params['fast_init']
         })
         self.fast = m.NonSpikingLayer(shape, params=params_fast, device=device, dtype=dtype)
+        self.state_fast = torch.zeros(shape, dtype=dtype, device=device) + self.params['fast_init']
         self.syn_input_slow = m.NonSpikingChemicalSynapseElementwise(params=params_input_syn, device=device, dtype=dtype)
         params_slow = nn.ParameterDict({
             'tau': self.params['slow_tau'],
@@ -75,6 +80,7 @@ class SNSBandpass(nn.Module):
             'init': self.params['slow_init']
         })
         self.slow = m.NonSpikingLayer(shape, params=params_slow, device=device, dtype=dtype)
+        self.state_slow = torch.zeros(shape, dtype=dtype, device=device) + self.params['slow_init']
         params_fast_syn_output = nn.ParameterDict({
             'conductance': g_bd,
             'reversal': self.params['reversalIn']
@@ -93,25 +99,28 @@ class SNSBandpass(nn.Module):
             'init': self.params['output_init']
         })
         self.output = m.NonSpikingLayer(shape, params=params_output, device=device, dtype=dtype)
+        self.state_output = torch.zeros(shape, dtype=dtype, device=device) + self.params['output_init']
 
-    def forward(self, x, states):
-        state_input = states[0]
-        state_fast = states[1]
-        state_slow = states[2]
-        state_output = states[3]
+    @jit.script_method
+    def forward(self, x):#, states):
+        # state_input = states[0]
+        # state_fast = states[1]
+        # state_slow = states[2]
+        # state_output = states[3]
 
-        input2fast = self.syn_input_fast(state_input, state_fast)
-        input2slow = self.syn_input_slow(state_input, state_slow)
-        fast2out = self.syn_fast_output(state_fast, state_output)
-        slow2out = self.syn_slow_output(state_slow, state_output)
+        input2fast = self.syn_input_fast(self.state_input, self.state_fast)
+        input2slow = self.syn_input_slow(self.state_input, self.state_slow)
+        fast2out = self.syn_fast_output(self.state_fast, self.state_output)
+        slow2out = self.syn_slow_output(self.state_slow, self.state_output)
 
-        state_input = self.input(x, state_input)
-        state_fast = self.fast(input2fast, state_fast)
-        state_slow = self.slow(input2slow, state_slow)
-        state_output = self.output(fast2out+slow2out, state_output)
-        return [state_input, state_fast, state_slow, state_output]
+        self.state_input = self.input(x, self.state_input)
+        self.state_fast = self.fast(input2fast, self.state_fast)
+        self.state_slow = self.slow(input2slow, self.state_slow)
+        self.state_output = self.output(fast2out+slow2out, self.state_output)
+        # return [state_input, state_fast, state_slow, state_output]
+        return self.state_output
 
-class SNSMotionVisionEye(nn.Module):
+class SNSMotionVisionEye(jit.ScriptModule):
     def __init__(self, dt, shape_input, shape_field, params=None, device=None, dtype=torch.float32, generator=None):
         super().__init__()
         if device is None:
@@ -161,6 +170,7 @@ class SNSMotionVisionEye(nn.Module):
             'init': nn.Parameter(torch.zeros(shape_input, dtype=dtype).to(device), requires_grad=False)
         })
         self.input = m.NonSpikingLayer(shape_input, params=nrn_input_params, device=device, dtype=dtype)
+        self.state_input = torch.zeros(shape_input, dtype=dtype, device=device)+nrn_input_params['init']
 
         # Lamina
         shape_post_conv = [x - (shape_field - 1) for x in shape_input]
@@ -219,6 +229,7 @@ class SNSMotionVisionEye(nn.Module):
             'init': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
         })
         self.lowpass = m.NonSpikingLayer(shape_post_conv, params=nrn_l_params, device=device, dtype=dtype)
+        self.state_lowpass = torch.zeros(shape_post_conv, dtype=dtype, device=device)+nrn_l_params['init']
         # Bf
         syn_in_bf_params = nn.ParameterDict({
             'conductance': nn.Parameter(self.params['kernelConductanceInBF'].data, requires_grad=False),
@@ -278,6 +289,7 @@ class SNSMotionVisionEye(nn.Module):
             'init': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
         })
         self.enhance_on = m.NonSpikingLayer(shape_post_conv, params=nrn_eo_params, device=device, dtype=dtype)
+        self.state_enhance_on = torch.zeros(shape_post_conv, dtype=dtype, device=device)+nrn_eo_params['init']
         # DO
         syn_bo_do_params = nn.ParameterDict({
             'conductance': self.params['conductanceBODO'],
@@ -296,6 +308,7 @@ class SNSMotionVisionEye(nn.Module):
             'init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
         })
         self.direct_on = m.NonSpikingLayer(shape_post_conv, params=nrn_do_params, device=device, dtype=dtype)
+        self.state_direct_on = torch.zeros(shape_post_conv, dtype=dtype, device=device)+nrn_do_params['init']
         # SO
         syn_do_so_params = nn.ParameterDict({
             'conductance': self.params['conductanceDOSO'],
@@ -313,6 +326,7 @@ class SNSMotionVisionEye(nn.Module):
             'init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
         })
         self.suppress_on = m.NonSpikingLayer(shape_post_conv, params=nrn_so_params, device=device, dtype=dtype)
+        self.state_suppress_on = torch.zeros(shape_post_conv, dtype=dtype, device=device)+nrn_so_params['init']
         # Off
         # EF
         syn_l_ef_params = nn.ParameterDict({
@@ -331,6 +345,7 @@ class SNSMotionVisionEye(nn.Module):
             'init': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
         })
         self.enhance_off = m.NonSpikingLayer(shape_post_conv, params=nrn_ef_params, device=device, dtype=dtype)
+        self.state_enhance_off = torch.zeros(shape_post_conv, dtype=dtype, device=device)+nrn_ef_params['init']
         # DF
         syn_bf_df_params = nn.ParameterDict({
             'conductance': self.params['conductanceBFDF'],
@@ -350,6 +365,7 @@ class SNSMotionVisionEye(nn.Module):
             'init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
         })
         self.direct_off = m.NonSpikingLayer(shape_post_conv, params=nrn_df_params, device=device, dtype=dtype)
+        self.state_direct_off = torch.zeros(shape_post_conv, dtype=dtype, device=device)+nrn_df_params['init']
         # SF
         syn_df_sf_params = nn.ParameterDict({
             'conductance': self.params['conductanceDFSF'],
@@ -367,6 +383,7 @@ class SNSMotionVisionEye(nn.Module):
             'init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
         })
         self.suppress_off = m.NonSpikingLayer(shape_post_conv, params=nrn_sf_params, device=device, dtype=dtype)
+        self.state_suppress_off = torch.zeros(shape_post_conv, dtype=dtype, device=device)+nrn_sf_params['init']
         # Lobula
         shape_emd = [x - 2 for x in shape_post_conv]
         # On
@@ -404,6 +421,7 @@ class SNSMotionVisionEye(nn.Module):
             'init': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
         })
         self.ccw_on = m.NonSpikingLayer(shape_emd, params=nrn_ccw_on_params, device=device, dtype=dtype)
+        self.state_ccw_on = torch.zeros(shape_emd, dtype=dtype, device=device)+nrn_ccw_on_params['init']
         # CW
         syn_eo_cw_on_params = nn.ParameterDict({
             'conductance': nn.Parameter(torch.tensor([[0, 0, 0], [0, 0, self.params['conductanceEOOn']], [0, 0, 0]],
@@ -430,6 +448,7 @@ class SNSMotionVisionEye(nn.Module):
             'init': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
         })
         self.cw_on = m.NonSpikingLayer(shape_emd, params=nrn_cw_on_params, device=device, dtype=dtype)
+        self.state_cw_on = torch.zeros(shape_emd, dtype=dtype, device=device)+nrn_cw_on_params['init']
 
         # Off
         syn_df_off_params = nn.ParameterDict({
@@ -466,6 +485,7 @@ class SNSMotionVisionEye(nn.Module):
             'init': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
         })
         self.ccw_off = m.NonSpikingLayer(shape_emd, params=nrn_ccw_off_params, device=device, dtype=dtype)
+        self.state_ccw_off = torch.zeros(shape_emd, dtype=dtype, device=device)+nrn_ccw_off_params['init']
         # CW
         syn_ef_cw_off_params = nn.ParameterDict({
             'conductance': nn.Parameter(torch.tensor([[0, 0, 0], [0, 0, self.params['conductanceEFOff']], [0, 0, 0]],
@@ -492,141 +512,189 @@ class SNSMotionVisionEye(nn.Module):
             'init': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
         })
         self.cw_off = m.NonSpikingLayer(shape_emd, params=nrn_cw_off_params, device=device, dtype=dtype)
+        self.state_cw_off = torch.zeros(shape_emd, dtype=dtype, device=device)+nrn_cw_off_params['init']
 
-    def forward(self, x, states):
-        state_input = states[0]
-        state_bp_on_input = states[1]
-        state_bp_on_fast = states[2]
-        state_bp_on_slow = states[3]
-        state_bp_on_output = states[4]
-        state_lowpass = states[5]
-        state_bp_off_input = states[6]
-        state_bp_off_fast = states[7]
-        state_bp_off_slow = states[8]
-        state_bp_off_output = states[9]
-        state_enhance_on = states[10]
-        state_direct_on = states[11]
-        state_suppress_on = states[12]
-        state_enhance_off = states[13]
-        state_direct_off = states[14]
-        state_suppress_off = states[15]
-        state_ccw_on = states[16]
-        state_cw_on = states[17]
-        state_ccw_off = states[18]
-        state_cw_off = states[19]
+    @jit.script_method
+    def forward(self, x):#, states: List[torch.Tensor]):
+        # with profiler.record_function("EYE STATE COPYING"):
+        # state_input = states[0]
+        # state_bp_on_input = states[1]
+        # state_bp_on_fast = states[2]
+        # state_bp_on_slow = states[3]
+        # state_bp_on_output = states[4]
+        # state_lowpass = states[5]
+        # state_bp_off_input = states[6]
+        # state_bp_off_fast = states[7]
+        # state_bp_off_slow = states[8]
+        # state_bp_off_output = states[9]
+        # state_enhance_on = states[10]
+        # state_direct_on = states[11]
+        # state_suppress_on = states[12]
+        # state_enhance_off = states[13]
+        # state_direct_off = states[14]
+        # state_suppress_off = states[15]
+        # state_ccw_on = states[16]
+        # state_cw_on = states[17]
+        # state_ccw_off = states[18]
+        # state_cw_off = states[19]
 
         # Synaptic updates
-        syn_input_bandpass_on = self.syn_input_bandpass_on(state_input, state_bp_on_input)
-        syn_input_lowpass = self.syn_input_lowpass(state_input, state_lowpass)
-        syn_input_bandpass_off = self.syn_input_bandpass_off(state_input, state_bp_off_input)
-        syn_lowpass_enhance_on = self.syn_lowpass_enhance_on(state_lowpass, state_enhance_on)
-        syn_bandpass_on_direct_on = self.syn_bandpass_on_direct_on(state_bp_on_output, state_direct_on)
-        syn_direct_on_suppress_on = self.syn_direct_on_suppress_on(state_direct_on, state_suppress_on)
-        syn_lowpass_enhance_off = self.syn_lowpass_enhance_off(state_lowpass, state_enhance_off)
-        syn_bandpass_off_direct_off = self.syn_bandpass_off_direct_off(state_bp_off_output, state_direct_off)
-        syn_direct_off_suppress_off = self.syn_direct_off_suppress_off(state_direct_off, state_suppress_off)
-        syn_enhance_on_ccw_on = self.syn_enhance_on_ccw_on(state_enhance_on, state_ccw_on)
-        syn_direct_on_ccw_on = self.syn_direct_on_on(state_direct_on, state_ccw_on)
-        syn_suppress_on_ccw_on = self.syn_suppress_on_ccw_on(state_suppress_on, state_ccw_on)
-        syn_enhance_on_cw_on = self.syn_enhance_on_cw_on(state_enhance_on, state_cw_on)
-        syn_direct_on_cw_on = self.syn_direct_on_on(state_direct_on, state_cw_on)
-        syn_suppress_on_cw_on = self.syn_suppress_on_cw_on(state_suppress_on, state_cw_on)
-        syn_enhance_off_ccw_off = self.syn_enhance_off_ccw_off(state_enhance_off, state_ccw_off)
-        syn_direct_off_ccw_off = self.syn_direct_off_off(state_direct_off, state_ccw_off)
-        syn_suppress_off_ccw_off = self.syn_suppress_off_ccw_off(state_suppress_off, state_ccw_off)
-        syn_enhance_off_cw_off = self.syn_enhance_off_cw_off(state_enhance_off, state_cw_off)
-        syn_direct_off_cw_off = self.syn_direct_off_off(state_direct_off, state_cw_off)
-        syn_suppress_off_cw_off = self.syn_suppress_off_cw_off(state_suppress_off, state_cw_off)
+        # with profiler.record_function("EYE SYNAPTIC UPDATES"):
+        syn_input_bandpass_on = self.syn_input_bandpass_on(self.state_input, self.bandpass_on.state_input)
+        syn_input_lowpass = self.syn_input_lowpass(self.state_input, self.state_lowpass)
+        syn_input_bandpass_off = self.syn_input_bandpass_off(self.state_input, self.bandpass_off.state_input)
+        syn_lowpass_enhance_on = self.syn_lowpass_enhance_on(self.state_lowpass, self.state_enhance_on)
+        syn_bandpass_on_direct_on = self.syn_bandpass_on_direct_on(self.bandpass_on.state_output, self.state_direct_on)
+        syn_direct_on_suppress_on = self.syn_direct_on_suppress_on(self.state_direct_on, self.state_suppress_on)
+        syn_lowpass_enhance_off = self.syn_lowpass_enhance_off(self.state_lowpass, self.state_enhance_off)
+        syn_bandpass_off_direct_off = self.syn_bandpass_off_direct_off(self.bandpass_off.state_output, self.state_direct_off)
+        syn_direct_off_suppress_off = self.syn_direct_off_suppress_off(self.state_direct_off, self.state_suppress_off)
+        syn_enhance_on_ccw_on = self.syn_enhance_on_ccw_on(self.state_enhance_on, self.state_ccw_on)
+        syn_direct_on_ccw_on = self.syn_direct_on_on(self.state_direct_on, self.state_ccw_on)
+        syn_suppress_on_ccw_on = self.syn_suppress_on_ccw_on(self.state_suppress_on, self.state_ccw_on)
+        syn_enhance_on_cw_on = self.syn_enhance_on_cw_on(self.state_enhance_on, self.state_cw_on)
+        syn_direct_on_cw_on = self.syn_direct_on_on(self.state_direct_on, self.state_cw_on)
+        syn_suppress_on_cw_on = self.syn_suppress_on_cw_on(self.state_suppress_on, self.state_cw_on)
+        syn_enhance_off_ccw_off = self.syn_enhance_off_ccw_off(self.state_enhance_off, self.state_ccw_off)
+        syn_direct_off_ccw_off = self.syn_direct_off_off(self.state_direct_off, self.state_ccw_off)
+        syn_suppress_off_ccw_off = self.syn_suppress_off_ccw_off(self.state_suppress_off, self.state_ccw_off)
+        syn_enhance_off_cw_off = self.syn_enhance_off_cw_off(self.state_enhance_off, self.state_cw_off)
+        syn_direct_off_cw_off = self.syn_direct_off_off(self.state_direct_off, self.state_cw_off)
+        syn_suppress_off_cw_off = self.syn_suppress_off_cw_off(self.state_suppress_off, self.state_cw_off)
 
         # Neural updates
         # print(x)
         # print(state_input)
-        state_input = self.input(x.squeeze(), state_input)
+        # with profiler.record_function("EYE NEURAL UPDATES"):
+        self.state_input = self.input(x.squeeze(), self.state_input)
+        _ = self.bandpass_on(syn_input_bandpass_on.squeeze())
+        self.state_lowpass = self.lowpass(torch.squeeze(syn_input_lowpass), self.state_lowpass)
+        _ = self.bandpass_off(syn_input_bandpass_off.squeeze())
+        self.state_enhance_on = self.enhance_on(syn_lowpass_enhance_on, self.state_enhance_on)
+        self.state_direct_on = self.direct_on(syn_bandpass_on_direct_on, self.state_direct_on)
+        self.state_suppress_on = self.suppress_on(syn_direct_on_suppress_on, self.state_suppress_on)
+        self.state_enhance_off = self.enhance_off(syn_lowpass_enhance_off, self.state_enhance_off)
+        self.state_direct_off = self.direct_off(syn_bandpass_off_direct_off, self.state_direct_off)
+        self.state_suppress_off = self.suppress_off(syn_direct_off_suppress_off, self.state_suppress_off)
+        self.state_ccw_on = self.ccw_on(torch.squeeze(syn_enhance_on_ccw_on+syn_direct_on_ccw_on+syn_suppress_on_ccw_on), self.state_ccw_on)
+        self.state_cw_on = self.cw_on(torch.squeeze(syn_enhance_on_cw_on+syn_direct_on_cw_on+syn_suppress_on_cw_on), self.state_cw_on)
+        self.state_ccw_off = self.ccw_off(torch.squeeze(syn_enhance_off_ccw_off+syn_direct_off_ccw_off+syn_suppress_off_ccw_off), self.state_ccw_off)
+        self.state_cw_off = self.cw_off(torch.squeeze(syn_enhance_off_cw_off+syn_direct_off_cw_off+syn_suppress_off_cw_off), self.state_cw_off)
 
-        [state_bp_on_input, state_bp_on_fast, state_bp_on_slow, state_bp_on_output] = self.bandpass_on(
-            syn_input_bandpass_on.squeeze(), [state_bp_on_input, state_bp_on_fast, state_bp_on_slow, state_bp_on_output])
-        state_lowpass = self.lowpass(torch.squeeze(syn_input_lowpass), state_lowpass)
-        [state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output] = self.bandpass_off(
-            syn_input_bandpass_off.squeeze(), [state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output])
-        state_enhance_on = self.enhance_on(syn_lowpass_enhance_on, state_enhance_on)
-        state_direct_on = self.direct_on(syn_bandpass_on_direct_on, state_direct_on)
-        state_suppress_on = self.suppress_on(syn_direct_on_suppress_on, state_suppress_on)
-        state_enhance_off = self.enhance_off(syn_lowpass_enhance_off, state_enhance_off)
-        state_direct_off = self.direct_off(syn_bandpass_off_direct_off, state_direct_off)
-        state_suppress_off = self.suppress_off(syn_direct_off_suppress_off, state_suppress_off)
-        state_ccw_on = self.ccw_on(torch.squeeze(syn_enhance_on_ccw_on+syn_direct_on_ccw_on+syn_suppress_on_ccw_on), state_ccw_on)
-        state_cw_on = self.cw_on(torch.squeeze(syn_enhance_on_cw_on+syn_direct_on_cw_on+syn_suppress_on_cw_on), state_cw_on)
-        state_ccw_off = self.ccw_off(torch.squeeze(syn_enhance_off_ccw_off+syn_direct_off_ccw_off+syn_suppress_off_ccw_off), state_ccw_off)
-        state_cw_off = self.cw_off(torch.squeeze(syn_enhance_off_cw_off+syn_direct_off_cw_off+syn_suppress_off_cw_off), state_cw_off)
+        # with profiler.record_function("EYE OUTPUT FORMAT"):
 
-        return [state_input, state_bp_on_input, state_bp_on_fast, state_bp_on_slow, state_bp_on_output,
-                state_lowpass, state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output,
-                state_enhance_on, state_direct_on, state_suppress_on, state_enhance_off, state_direct_off,
-                state_suppress_off, state_ccw_on, state_cw_on, state_ccw_off, state_cw_off]
 
-        # # Medulla (On)
-        # # Do
-        # self.syn_bandpass_on_direct_on = m.ChemicalSynapseElementwise(device=device, dtype=dtype)
-        # self.direct_on = m.NonSpikingLayer(shape_post_conv, device=device, dtype=dtype)
-        # # Eo
-        # self.syn_lowpass_enhance_on = m.ChemicalSynapseElementwise(device=device, dtype=dtype)
-        # self.enhance_on = m.NonSpikingLayer(shape_post_conv, device=device, dtype=dtype)
-        # # So
-        # self.syn_direct_on_suppress_on = m.ChemicalSynapseElementwise(device=device, dtype=dtype)
-        # self.suppress_on = m.NonSpikingLayer(shape_post_conv, device=device, dtype=dtype)
-        #
-        # # Medulla (Off)
-        # # Df
-        # self.syn_bandpass_off_direct_off = m.ChemicalSynapseElementwise(device=device, dtype=dtype)
-        # self.syn_suppress_off_direct_off = m.ChemicalSynapseElementwise(device=device, dtype=dtype)
-        # self.direct_off = m.NonSpikingLayer(shape_post_conv, device=device, dtype=dtype)
-        # # Ef
-        # self.syn_lowpass_enhance_off = m.ChemicalSynapseElementwise(device=device, dtype=dtype)
-        # self.syn_suppress_off_enhance_off = m.ChemicalSynapseElementwise(device=device, dtype=dtype)
-        # self.enhance_off = m.NonSpikingLayer(shape_post_conv, device=device, dtype=dtype)
-        # # Sf
-        # self.syn_direct_off_suppress_off = m.ChemicalSynapseElementwise(device=device, dtype=dtype)
-        # self.syn_enhance_off_suppress_off = m.ChemicalSynapseElementwise(device=device, dtype=dtype)
-        # self.suppress_off = m.NonSpikingLayer(shape_post_conv, device=device, dtype=dtype)
-        #
-        # # Detectors
-        # shape_emd = [x - 2 for x in shape_post_conv]
-        # # On EMD
-        # cond_enhance_on_emd = nn.Parameter(torch.tensor([9.0],device=device,dtype=dtype),requires_grad=True)
-        # cond_direct_on_emd = nn.Parameter(torch.tensor([0.262],device=device,dtype=dtype),requires_grad=True)
-        # cond_suppress_on_emd = nn.Parameter(torch.tensor([0.5],device=device,dtype=dtype),requires_grad=True)
-        #
-        # # CW
-        # kernel_cond_enhance_on_cw_on = torch.tensor([[0,0,0],[0,0,cond_enhance_on_emd.data_sns_toolbox],[0,0,0]],device=device,dtype=dtype)
-        # kernel_cond_direct_on_cw_on = torch.tensor([[0,0,0],[0,cond_direct_on_emd.data_sns_toolbox,0,0],[0,0,0]],device=device,dtype=dtype)
-        # kernel_cond_suppress_on_cw_on = torch.tensor([[0,0,0],[cond_suppress_on_emd.data_sns_toolbox,0,0],[0,0,0]],device=device,dtype=dtype)
-        #
-        # kernel_reversal_enhance_on_cw_on = torch.tensor([[0, 0, 0], [0, 0, reversal_mod.data_sns_toolbox], [0, 0, 0]],
-        #                                             device=device, dtype=dtype)
-        # kernel_reversal_direct_on_cw_on = torch.tensor([[0, 0, 0], [0, reversal_ex.data_sns_toolbox, 0, 0], [0, 0, 0]],
-        #                                            device=device, dtype=dtype)
-        # kernel_reversal_suppress_on_cw_on = torch.tensor([[0, 0, 0], [reversal_in.data_sns_toolbox, 0, 0], [0, 0, 0]],
-        #                                          device=device, dtype=dtype)
-        #
-        # self.syn_enhance_on_emd_cw_on = m.ChemicalSynapseConv2d(1,1,3, kernel_conductance=ke, device=device, dtype=dtype)
-        # self.syn_direct_on_emd_cw_on = m.ChemicalSynapseConv2d(1, 1, 3, device=device, dtype=dtype)
-        # self.syn_suppress_on_emd_cw_on = m.ChemicalSynapseConv2d(1, 1, 3, device=device, dtype=dtype)
-        # self.emd_cw_on = m.NonSpikingLayer(shape_emd, device=device, dtype=dtype)
-        #
-        # # CCW
-        # kernel_cond_enhance_on_ccw_on = torch.tensor([[0, 0, 0], [cond_enhance_on_emd.data_sns_toolbox, 0, 0], [0, 0, 0]],
-        #                                              device=device, dtype=dtype)
-        # kernel_cond_direct_on_ccw_on = torch.tensor([[0, 0, 0], [0, cond_direct_on_emd.data_sns_toolbox, 0, 0], [0, 0, 0]],
-        #                                             device=device, dtype=dtype)
-        # kernel_cond_suppress_on_ccw_on = torch.tensor([[0, 0, 0], [0, 0, cond_enhance_on_emd.data_sns_toolbox], [0, 0, 0]],
-        #                                           device=device, dtype=dtype)
-        #
-        # kernel_reversal_enhance_on_ccw_on = torch.tensor([[0, 0, 0], [reversal_mod.data_sns_toolbox, 0, 0], [0, 0, 0]],
-        #                                              device=device, dtype=dtype)
-        # kernel_reversal_direct_on_ccw_on = torch.tensor([[0, 0, 0], [0, reversal_ex.data_sns_toolbox, 0, 0], [0, 0, 0]],
-        #                                             device=device, dtype=dtype)
-        # kernel_reversal_suppress_on_ccw_on = torch.tensor([[0, 0, 0], [0, 0, reversal_in.data_sns_toolbox], [0, 0, 0]],
-        #                                           device=device, dtype=dtype)
+        return self.state_ccw_on, self.state_cw_on, self.state_ccw_off, self.state_cw_off
+
+class SNSMotionVisionMerged(jit.ScriptModule):
+    def __init__(self, dt, shape_input, shape_field, params=None, device=None, dtype=torch.float32, generator=None):
+        super().__init__()
+        if device is None:
+            device = 'cpu'
+
+        self.params = nn.ParameterDict({
+            'reversalEx': nn.Parameter(torch.tensor([2.0], dtype=dtype).to(device)),
+            'reversalIn': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device)),
+            'reversalMod': nn.Parameter(torch.tensor([0.0], dtype=dtype).to(device)),
+            'freqFast': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'kernelConductanceInBO': nn.Parameter(torch.rand(shape_field, dtype=dtype, generator=generator).to(device)),
+            'kernelReversalInBO': nn.Parameter((2 * torch.rand(shape_field, generator=generator) - 1).to(device)),
+            'freqBOFast': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'freqBOSlow': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'kernelConductanceInL': nn.Parameter(torch.rand(shape_field, dtype=dtype, generator=generator).to(device)),
+            'kernelReversalInL': nn.Parameter((2 * torch.rand(shape_field, generator=generator) - 1).to(device)),
+            'freqL': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'kernelConductanceInBF': nn.Parameter(torch.rand(shape_field, dtype=dtype, generator=generator).to(device)),
+            'kernelReversalInBF': nn.Parameter((2 * torch.rand(shape_field, generator=generator) - 1).to(device)),
+            'freqBFFast': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'freqBFSlow': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'conductanceLEO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqEO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'conductanceBODO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqDO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'conductanceDOSO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqSO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'conductanceEOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'conductanceDOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'conductanceSOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'conductanceEFOff': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'conductanceDFOff': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'conductanceSFOff': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'gainHorizontal': nn.Parameter(torch.tensor([1.0], dtype=dtype).to(device))
+        })
+        if params is not None:
+            self.params.update(params)
+        self.eye = SNSMotionVisionEye(dt, shape_input, shape_field, params=self.params, device=device, dtype=dtype,
+                                      generator=None)
+        shape_post_conv = [x - (shape_field - 1) for x in shape_input]
+        shape_emd = [x - 2 for x in shape_post_conv]
+        flat_shape_emd = shape_emd[0]*shape_emd[1]
+
+        g_ex_full = self.params['gainHorizontal']/(self.params['reversalEx']-self.params['gainHorizontal'])
+        g_in_full = (-self.params['gainHorizontal']*self.params['reversalEx'])/(self.params['reversalIn']*(self.params['reversalEx']-self.params['gainHorizontal']))
+        g_ex_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + g_ex_full/flat_shape_emd
+        g_in_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + g_in_full / flat_shape_emd
+        reversal_ex_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + self.params['reversalEx']
+        reversal_in_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + self.params['reversalIn']
+
+        # Horizontal Cells
+        syn_cw_ex_ccw_in_params = nn.ParameterDict({
+            'conductance': nn.Parameter(torch.vstack((g_ex_tensor,g_in_tensor)).to(device), requires_grad=False),
+            'reversal': nn.Parameter(torch.vstack((reversal_ex_tensor,reversal_in_tensor)).to(device),
+                                     requires_grad=False)
+        })
+        syn_cw_in_ccw_ex_params = nn.ParameterDict({
+            'conductance': nn.Parameter(torch.vstack((g_in_tensor, g_ex_tensor)).to(device), requires_grad=False),
+            'reversal': nn.Parameter(torch.vstack((reversal_in_tensor, reversal_ex_tensor)).to(device),
+                                     requires_grad=False)
+        })
+        self.syn_cw_ex_ccw_in = m.NonSpikingChemicalSynapseLinear(flat_shape_emd, 2,
+                                                                  params=syn_cw_ex_ccw_in_params, device=device,
+                                                                  dtype=dtype, generator=generator)
+        self.syn_cw_in_ccw_ex = m.NonSpikingChemicalSynapseLinear(flat_shape_emd, 2,
+                                                                  params=syn_cw_in_ccw_ex_params, device=device,
+                                                                  dtype=dtype, generator=generator)
+        tau_fast = dt / __calc_cap_from_cutoff__(self.params['freqFast'].data)
+        nrn_hc_params = nn.ParameterDict({
+            'tau': nn.Parameter((tau_fast.data + torch.zeros(2, dtype=dtype, device=device)).to(device),
+                                requires_grad=False),
+            'leak': nn.Parameter(torch.ones(2, dtype=dtype).to(device), requires_grad=False),
+            'rest': nn.Parameter(torch.zeros(2, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(torch.zeros(2, dtype=dtype).to(device), requires_grad=False),
+            'init': nn.Parameter(torch.zeros(2, dtype=dtype).to(device), requires_grad=False)
+        })
+        self.horizontal = m.NonSpikingLayer(2, params=nrn_hc_params, device=device, dtype=dtype)
+        self.state_horizontal = torch.zeros(2, dtype=dtype, device=device)+nrn_hc_params['init']
+
+    @jit.script_method
+    def forward(self, x):#, states):
+        # with profiler.record_function("MERGED STATE INPUT"):
+        # state_ccw_on = states[16]
+        # state_cw_on = states[17]
+        # state_ccw_off = states[18]
+        # state_cw_off = states[19]
+        # state_horizontal = states[20]
+
+        # with profiler.record_function("MERGED SYNAPTIC UPDATES"):
+        syn_cw_on = self.syn_cw_ex_ccw_in(torch.flatten(self.eye.state_cw_on), self.state_horizontal)
+        syn_ccw_on = self.syn_cw_in_ccw_ex(torch.flatten(self.eye.state_ccw_on), self.state_horizontal)
+        syn_cw_off = self.syn_cw_ex_ccw_in(torch.flatten(self.eye.state_cw_off), self.state_horizontal)
+        syn_ccw_off = self.syn_cw_in_ccw_ex(torch.flatten(self.eye.state_ccw_off), self.state_horizontal)
+
+        # with profiler.record_function("EYE PROCESSING"):
+        _ = self.eye(x)
+
+        # with profiler.record_function("MERGED NEURAL UPDATE"):
+        self.state_horizontal = self.horizontal(syn_ccw_on+syn_cw_on+syn_ccw_off+syn_cw_off, self.state_horizontal)
+
+        # with profiler.record_function("MERGED STATE OUTPUT"):
+        # states = [state_input, state_bp_on_input, state_bp_on_fast, state_bp_on_slow, state_bp_on_output,
+        #  state_lowpass, state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output,
+        #  state_enhance_on, state_direct_on, state_suppress_on, state_enhance_off, state_direct_off,
+        #  state_suppress_off, state_ccw_on, state_cw_on, state_ccw_off, state_cw_off, state_horizontal]
+
+        return self.state_horizontal
+
 
 if __name__ == "__main__":
     img_size = [24,32]

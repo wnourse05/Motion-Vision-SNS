@@ -51,10 +51,12 @@ params = nn.ParameterDict({
 
 shape = [24,64]
 with torch.no_grad():
+    # torch.jit.enable_onednn_fusion(True)  # slower
     model_torch = SNSMotionVisionMerged(params_sns['dt'], shape, 1, params=params, dtype=dtype, device=device)
     model_torch.eval()
     model_torch = torch.jit.freeze(model_torch)
     model_torch = torch.compile(model_torch)
+    # model_torch = torch.jit.optimize_for_inference(model_torch)   # slows down
 
     stim = torch.rand(shape,dtype=dtype, device=device)
 

@@ -475,6 +475,332 @@ def gen_motion_vision(params, shape, backend, device, center=False, scale=None):
 
     return model, net
 
+def gen_motion_vision_no_output(params, shape, backend, device, center=False, scale=None):
+    """
+    ####################################################################################################################
+    INITIALIZE NETWORK
+    """
+    net = Network('Motion Vision Network')
+    flat_size = int(shape[0]*shape[1])
+
+    """
+    ####################################################################################################################
+    INPUT
+    """
+    params_in = params['in']
+    add_lowpass_filter(net, params_in['cutoff'], name='In',
+                       invert=False,
+                       initial_value=0.0,
+                       bias=0.0, shape=shape, color='black')
+
+    net.add_input('In', size=flat_size)
+    # net.add_output('In')
+
+    """
+    ####################################################################################################################
+    LAYER 1
+    """
+    params_bp = params['bp']
+    params_lp = params['lp']
+    # g_in_bp, reversal_in_bp, e_lo_in_bp, e_hi_in_bp = __gen_receptive_fields__(params_bp, center=center, scale=scale)
+    # g_in_lp, reversal_in_lp, e_lo_in_lp, e_hi_in_lp = __gen_receptive_fields__(params_lp, center=center, scale=scale)
+    synapse_in_bp = NonSpikingOneToOneConnection(max_conductance=params_bp['g']['center'],
+                                                 reversal_potential=params_bp['reversal']['center'], e_lo=0.0,
+                                                 e_hi=activity_range, shape=shape)
+    synapse_in_lp = NonSpikingOneToOneConnection(max_conductance=params_lp['g']['center'],
+                                                 reversal_potential=params_lp['reversal']['center'], e_lo=0.0,
+                                                 e_hi=activity_range, shape=shape)
+
+    add_scaled_bandpass_filter(net, params_bp['cutoffLow'], params_bp['cutoffHigh'],
+                               params_bp['gain'], invert=params_bp['invert'], name='BP',
+                               shape=shape, color='darkgreen')
+    add_lowpass_filter(net, cutoff=params_lp['cutoff'], name='LP',
+                       invert=params_lp['invert'],
+                       initial_value=params_lp['initialValue'], bias=params_lp['bias'],
+                       shape=shape, color='lightgreen')
+
+    net.add_connection(synapse_in_bp, 'In', 'BP_in')
+    net.add_connection(synapse_in_lp, 'In', 'LP')
+    # net.add_output('BP_out')
+    # net.add_output('LP')
+
+    """
+    ####################################################################################################################
+    LAYER 2
+    """
+    params_e = params['e']
+    add_lowpass_filter(net, cutoff=params_e['cutoff'], name='E',
+                       invert=params_e['invert'], bias=params_e['bias'],
+                       initial_value=params_e['initialValue'], shape=shape, color='indianred')
+    synapse_lp_e = NonSpikingOneToOneConnection(shape=shape, max_conductance=params_e['g'],
+                                                  reversal_potential=params_e['reversal'], e_lo=0.0,
+                                                  e_hi=activity_range)
+    net.add_connection(synapse_lp_e, 'LP', 'E')
+    # net.add_output('E')
+
+    params_d_on = params['d_on']
+
+    add_lowpass_filter(net, cutoff=params_d_on['cutoff'], name='D On',
+                       invert=params_d_on['invert'], bias=params_d_on['bias'],
+                       initial_value=params_d_on['initialValue'], shape=shape, color='red')
+    synapse_bp_d_on = NonSpikingOneToOneConnection(shape=shape, max_conductance=params_d_on['g'],
+                                                  reversal_potential=params_d_on['reversal'], e_lo=0.0,
+                                                  e_hi=activity_range)
+
+    net.add_connection(synapse_bp_d_on, 'BP_out', 'D On')
+    # net.add_output('D On')
+
+    params_d_off = params['d_off']
+    add_lowpass_filter(net, cutoff=params_d_off['cutoff'], name='D Off',
+                       invert=params_d_off['invert'], bias=params_d_off['bias'],
+                       initial_value=params_d_off['initialValue'], shape=shape, color='navy')
+    synapse_bp_d_off = NonSpikingOneToOneConnection(shape=shape, max_conductance=params_d_off['g'],
+                                                  reversal_potential=params_d_off['reversal'], e_lo=activity_range,
+                                                  e_hi=2*activity_range)
+
+    net.add_connection(synapse_bp_d_off, 'BP_out', 'D Off')
+
+    # net.add_output('D Off')
+
+    """
+    ####################################################################################################################
+    LAYER 2.5
+    """
+    params_s_on = params['s_on']
+    synapse_d_on_s_on = NonSpikingOneToOneConnection(shape=shape, max_conductance=params_s_on['g'],
+                                                      reversal_potential=params_s_on['reversal'], e_lo=0.0,
+                                                      e_hi=activity_range)
+    params_s_off = params['s_off']
+    synapse_d_off_s_off = NonSpikingOneToOneConnection(shape=shape, max_conductance=params_s_off['g'],
+                                                       reversal_potential=params_s_off['reversal'], e_lo=0.0,
+                                                       e_hi=activity_range)
+
+    add_lowpass_filter(net, cutoff=params_s_on['cutoff'], name='S On',
+                       invert=params_s_on['invert'], bias=params_s_on['bias'],
+                       initial_value=params_s_on['initialValue'], shape=shape, color='gold')
+    add_lowpass_filter(net, cutoff=params_s_off['cutoff'], name='S Off',
+                       invert=params_s_off['invert'], bias=params_s_off['bias'],
+                       initial_value=params_s_off['initialValue'], shape=shape, color='darkgoldenrod')
+
+    net.add_connection(synapse_d_on_s_on, 'D On', 'S On')
+    net.add_connection(synapse_d_off_s_off, 'D Off', 'S Off')
+
+    # net.add_output('S On')
+    # net.add_output('S Off')
+
+    """
+    ####################################################################################################################
+    ON
+    """
+    params_on = params['on']
+
+    g_e_on = params_on['g']['enhance']
+    g_d_on = params_on['g']['direct']
+    g_s_on = params_on['g']['suppress']
+
+    rev_e_on = -0.1#params_on['reversal']['enhance']
+    rev_d_on = params_on['reversal']['direct']
+    rev_s_on = params_on['reversal']['suppress']
+
+    g_e_on_kernel_b = np.array([[0, 0, 0],
+                                [g_e_on, 0, 0],
+                                [0, 0, 0]])
+    rev_e_on_kernel_b = np.array([[0, 0, 0],
+                               [rev_e_on, 0, 0],
+                               [0, 0, 0]])
+    g_s_on_kernel_b = np.array([[0, 0, 0],
+                                [0, 0, g_s_on],
+                                [0, 0, 0]])
+    rev_s_on_kernel_b = np.array([[0, 0, 0],
+                               [0, 0, rev_s_on],
+                               [0, 0, 0]])
+    g_e_on_kernel_a, g_e_on_kernel_c, g_e_on_kernel_d = __all_quadrants__(g_e_on_kernel_b)
+    g_s_on_kernel_a, g_s_on_kernel_c, g_s_on_kernel_d = __all_quadrants__(g_s_on_kernel_b)
+    rev_e_on_kernel_a, rev_e_on_kernel_c, rev_e_on_kernel_d = __all_quadrants__(rev_e_on_kernel_b)
+    rev_s_on_kernel_a, rev_s_on_kernel_c, rev_s_on_kernel_d = __all_quadrants__(rev_s_on_kernel_b)
+    e_lo_kernel = np.zeros([3,3])
+    e_hi_kernel = np.zeros([3,3]) + activity_range
+
+    synapse_d_on_on = NonSpikingOneToOneConnection(shape=shape, max_conductance=g_d_on, reversal_potential=rev_d_on,
+                                                  e_lo=0.0, e_hi=activity_range)
+
+    synapse_e_on_on_a = NonSpikingPatternConnection(max_conductance_kernel=g_e_on_kernel_a,
+                                                   reversal_potential_kernel=rev_e_on_kernel_a, e_lo_kernel=e_lo_kernel,
+                                                   e_hi_kernel=e_hi_kernel)
+    synapse_s_on_on_a = NonSpikingPatternConnection(max_conductance_kernel=g_s_on_kernel_a,
+                                                     reversal_potential_kernel=rev_s_on_kernel_a,
+                                                     e_lo_kernel=e_lo_kernel,
+                                                     e_hi_kernel=e_hi_kernel)
+    synapse_e_on_on_b = NonSpikingPatternConnection(max_conductance_kernel=g_e_on_kernel_b,
+                                                    reversal_potential_kernel=rev_e_on_kernel_b, e_lo_kernel=e_lo_kernel,
+                                                    e_hi_kernel=e_hi_kernel)
+    synapse_s_on_on_b = NonSpikingPatternConnection(max_conductance_kernel=g_s_on_kernel_b,
+                                                      reversal_potential_kernel=rev_s_on_kernel_b, e_lo_kernel=e_lo_kernel,
+                                                      e_hi_kernel=e_hi_kernel)
+    synapse_e_on_on_c = NonSpikingPatternConnection(max_conductance_kernel=g_e_on_kernel_c,
+                                                   reversal_potential_kernel=rev_e_on_kernel_c, e_lo_kernel=e_lo_kernel,
+                                                   e_hi_kernel=e_hi_kernel)
+    synapse_s_on_on_c = NonSpikingPatternConnection(max_conductance_kernel=g_s_on_kernel_c,
+                                                     reversal_potential_kernel=rev_s_on_kernel_c,
+                                                     e_lo_kernel=e_lo_kernel,
+                                                     e_hi_kernel=e_hi_kernel)
+    synapse_e_on_on_d = NonSpikingPatternConnection(max_conductance_kernel=g_e_on_kernel_d,
+                                                   reversal_potential_kernel=rev_e_on_kernel_d, e_lo_kernel=e_lo_kernel,
+                                                   e_hi_kernel=e_hi_kernel)
+    synapse_s_on_on_d = NonSpikingPatternConnection(max_conductance_kernel=g_s_on_kernel_d,
+                                                     reversal_potential_kernel=rev_s_on_kernel_d,
+                                                     e_lo_kernel=e_lo_kernel,
+                                                     e_hi_kernel=e_hi_kernel)
+
+
+    add_lowpass_filter(net, params_on['cutoff'], name='On A',
+                       invert=False,
+                       initial_value=0.0,
+                       bias=0.0, shape=shape, color='purple')
+    add_lowpass_filter(net, params_on['cutoff'], name='On B',
+                       invert=False,
+                       initial_value=0.0,
+                       bias=0.0, shape=shape, color='purple')
+    add_lowpass_filter(net, params_on['cutoff'], name='On C',
+                       invert=False,
+                       initial_value=0.0,
+                       bias=0.0, shape=shape, color='purple')
+    add_lowpass_filter(net, params_on['cutoff'], name='On D',
+                       invert=False,
+                       initial_value=0.0,
+                       bias=0.0, shape=shape, color='purple')
+
+    net.add_connection(synapse_d_on_on, 'D On', 'On A')
+    net.add_connection(synapse_e_on_on_a, 'E', 'On A')
+    net.add_connection(synapse_s_on_on_a, 'S On', 'On A')
+    net.add_connection(synapse_d_on_on, 'D On', 'On B')
+    net.add_connection(synapse_e_on_on_b, 'E', 'On B')
+    net.add_connection(synapse_s_on_on_b, 'S On', 'On B')
+    net.add_connection(synapse_d_on_on, 'D On', 'On C')
+    net.add_connection(synapse_e_on_on_c, 'E', 'On C')
+    net.add_connection(synapse_s_on_on_c, 'S On', 'On C')
+    net.add_connection(synapse_d_on_on, 'D On', 'On D')
+    net.add_connection(synapse_e_on_on_d, 'E', 'On D')
+    net.add_connection(synapse_s_on_on_d, 'S On', 'On D')
+
+    net.add_output('On A')
+    net.add_output('On B')
+    net.add_output('On C')
+    net.add_output('On D')
+
+    """
+    ####################################################################################################################
+    T5 CELLS
+    """
+    params_off = params['off']
+
+    g_e_off = params_off['g']['enhance']
+    g_d_off = params_off['g']['direct']
+    g_s_off = params_on['g']['suppress']
+
+    rev_e_off = params_off['reversal']['enhance']
+    rev_d_off = params_off['reversal']['direct']
+    rev_s_off = params_on['reversal']['suppress']
+
+    g_e_off_kernel_b = np.array([[0, 0, 0],
+                                [g_e_off, 0, 0],
+                                [0, 0, 0]])
+    rev_e_off_kernel_b = np.array([[0, 0, 0],
+                                  [rev_e_off, 0, 0],
+                                  [0, 0, 0]])
+    g_s_off_kernel_b = np.array([[0, 0, 0],
+                                [0, 0, g_s_off],
+                                [0, 0, 0]])
+    rev_s_off_kernel_b = np.array([[0, 0, 0],
+                                  [0, 0, rev_s_off],
+                                  [0, 0, 0]])
+    g_e_off_kernel_a, g_e_off_kernel_c, g_e_off_kernel_d = __all_quadrants__(g_e_off_kernel_b)
+    g_s_off_kernel_a, g_s_off_kernel_c, g_s_off_kernel_d = __all_quadrants__(g_s_off_kernel_b)
+    rev_e_off_kernel_a, rev_e_off_kernel_c, rev_e_off_kernel_d = __all_quadrants__(rev_e_off_kernel_b)
+    rev_s_off_kernel_a, rev_s_off_kernel_c, rev_s_off_kernel_d = __all_quadrants__(rev_s_off_kernel_b)
+    e_lo_kernel = np.zeros([3, 3])
+    e_hi_kernel = np.zeros([3, 3]) + activity_range
+
+    synapse_d_off_off = NonSpikingOneToOneConnection(shape=shape, max_conductance=g_d_off, reversal_potential=rev_d_off,
+                                                   e_lo=0.0, e_hi=activity_range)
+
+    synapse_e_off_off_a = NonSpikingPatternConnection(max_conductance_kernel=g_e_off_kernel_a,
+                                                    reversal_potential_kernel=rev_e_off_kernel_a,
+                                                    e_lo_kernel=e_lo_kernel,
+                                                    e_hi_kernel=e_hi_kernel)
+    synapse_s_off_off_a = NonSpikingPatternConnection(max_conductance_kernel=g_s_off_kernel_a,
+                                                    reversal_potential_kernel=rev_s_off_kernel_a,
+                                                    e_lo_kernel=e_lo_kernel,
+                                                    e_hi_kernel=e_hi_kernel)
+    synapse_e_off_off_b = NonSpikingPatternConnection(max_conductance_kernel=g_e_off_kernel_b,
+                                                    reversal_potential_kernel=rev_e_off_kernel_b,
+                                                    e_lo_kernel=e_lo_kernel,
+                                                    e_hi_kernel=e_hi_kernel)
+    synapse_s_off_off_b = NonSpikingPatternConnection(max_conductance_kernel=g_s_off_kernel_b,
+                                                    reversal_potential_kernel=rev_s_off_kernel_b,
+                                                    e_lo_kernel=e_lo_kernel,
+                                                    e_hi_kernel=e_hi_kernel)
+    synapse_e_off_off_c = NonSpikingPatternConnection(max_conductance_kernel=g_e_off_kernel_c,
+                                                    reversal_potential_kernel=rev_e_off_kernel_c,
+                                                    e_lo_kernel=e_lo_kernel,
+                                                    e_hi_kernel=e_hi_kernel)
+    synapse_s_off_off_c = NonSpikingPatternConnection(max_conductance_kernel=g_s_off_kernel_c,
+                                                    reversal_potential_kernel=rev_s_off_kernel_c,
+                                                    e_lo_kernel=e_lo_kernel,
+                                                    e_hi_kernel=e_hi_kernel)
+    synapse_e_off_off_d = NonSpikingPatternConnection(max_conductance_kernel=g_e_off_kernel_d,
+                                                    reversal_potential_kernel=rev_e_off_kernel_d,
+                                                    e_lo_kernel=e_lo_kernel,
+                                                    e_hi_kernel=e_hi_kernel)
+    synapse_s_off_off_d = NonSpikingPatternConnection(max_conductance_kernel=g_s_off_kernel_d,
+                                                    reversal_potential_kernel=rev_s_off_kernel_d,
+                                                    e_lo_kernel=e_lo_kernel,
+                                                    e_hi_kernel=e_hi_kernel)
+
+    add_lowpass_filter(net, params_off['cutoff'], name='Off A',
+                       invert=False,
+                       initial_value=0.0,
+                       bias=0.0, shape=shape, color='purple')
+    add_lowpass_filter(net, params_off['cutoff'], name='Off B',
+                       invert=False,
+                       initial_value=0.0,
+                       bias=0.0, shape=shape, color='purple')
+    add_lowpass_filter(net, params_off['cutoff'], name='Off C',
+                       invert=False,
+                       initial_value=0.0,
+                       bias=0.0, shape=shape, color='purple')
+    add_lowpass_filter(net, params_off['cutoff'], name='Off D',
+                       invert=False,
+                       initial_value=0.0,
+                       bias=0.0, shape=shape, color='purple')
+
+    net.add_connection(synapse_d_off_off, 'D Off', 'Off A')
+    net.add_connection(synapse_d_off_off, 'D Off', 'Off B')
+    net.add_connection(synapse_d_off_off, 'D Off', 'Off C')
+    net.add_connection(synapse_d_off_off, 'D Off', 'Off D')
+    net.add_connection(synapse_e_off_off_a, 'E', 'Off A')
+    net.add_connection(synapse_e_off_off_b, 'E', 'Off B')
+    net.add_connection(synapse_e_off_off_c, 'E', 'Off C')
+    net.add_connection(synapse_e_off_off_d, 'E', 'Off D')
+    net.add_connection(synapse_s_off_off_a, 'S Off', 'Off A')
+    net.add_connection(synapse_s_off_off_b, 'S Off', 'Off B')
+    net.add_connection(synapse_s_off_off_c, 'S Off', 'Off C')
+    net.add_connection(synapse_s_off_off_d, 'S Off', 'Off D')
+
+    net.add_output('Off A')
+    net.add_output('Off B')
+    net.add_output('Off C')
+    net.add_output('Off D')
+
+    """
+    ####################################################################################################################
+    EXPORT
+    """
+    # render(net, view=True)
+    model = net.compile(params['dt'], backend=backend, device=device)
+
+    return model, net
+
 # def gen_single_emd_on(dt, params):
 #     """
 #     ####################################################################################################################

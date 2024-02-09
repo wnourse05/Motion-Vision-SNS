@@ -7,9 +7,14 @@ import torch.autograd.profiler as profiler
 import torch.utils.benchmark as benchmark
 from timeit import default_timer
 import pickle
+import blosc
 
 
-params_sns = pickle.load(open('LivingMachines2023/params_net_20230327.pc', 'rb'))
+filename = 'LivingMachines2023/params_net_20230327.pc'
+with open(filename, 'rb') as f:
+        compressed = f.read()
+    decompressed = blosc.decompress(compressed)
+    params_sns = pickle.loads(decompressed)
 
 dtype = torch.float32
 device = 'cpu'

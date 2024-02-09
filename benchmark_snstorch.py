@@ -1,4 +1,3 @@
-from LivingMachines2023.utilities import load_data
 import torch
 import torch.nn as nn
 from motion_vision_net import SNSMotionVisionEye
@@ -6,14 +5,20 @@ from timeit import default_timer
 from tqdm import tqdm
 import pickle
 import numpy as np
+import blosc
 
 
-params_sns = load_data('LivingMachines2023/params_net_20230327.pc')
+filename = 'LivingMachines2023/params_net_20230327.pc'
+with open(filename, 'rb') as f:
+        compressed = f.read()
+decompressed = blosc.decompress(compressed)
+params_sns = pickle.loads(decompressed)
 
 dtype = torch.float32
-device = 'cpu'
-rows = np.geomspace(3,24)
-cols = np.geomspace(5,64)
+device = 'cuda'
+platform = 'jetson'
+rows = np.geomspace(3,24, num=10)
+cols = np.geomspace(5,64, num=10)
 num_trials = 100
 low_percentile = 0.05
 high_percentile = 0.95
@@ -68,8 +73,10 @@ with torch.no_grad():
         model_torch = SNSMotionVisionEye(params_sns['dt'], shape, 1, params=params, dtype=dtype, device=device)
         model_torch.eval()
         model_torch = torch.jit.freeze(model_torch)
-        model_torch = torch.compile(model_torch)
-        # model_torch = torch.jit.optimize_for_inference(model_torch)   # slows down
+        if platform == 'desktop':
+        	model_torch = torch.compile(model_torch)
+        elif platform == 'jetson':
+        	model_torch = torch.jit.optimize_for_inference(model_torch)   # slows down
 
         stim = torch.rand(shape,dtype=dtype, device=device)
 
@@ -80,9 +87,12 @@ with torch.no_grad():
         times = torch.zeros(num_trials)
         for j in range(num_trials):
             start = default_timer()
-            states = model_torch(stim)
+            state0, state1, state2, state3 = model_torch(stim)
             if device == 'cuda':
-                states = states.to('cpu')
+                state0 = state0.to('cpu')
+                state1 = state1.to('cpu')
+                state2 = state2.to('cpu')
+                state3 = state3.to('cpu')
             # output = states[20]#.to('cpu')
             end = default_timer()
             times[j] = (end-start)

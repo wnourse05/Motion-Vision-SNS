@@ -13,11 +13,11 @@ import blosc
 filename = 'LivingMachines2023/params_net_20230327.pc'
 with open(filename, 'rb') as f:
         compressed = f.read()
-    decompressed = blosc.decompress(compressed)
-    params_sns = pickle.loads(decompressed)
+decompressed = blosc.decompress(compressed)
+params_sns = pickle.loads(decompressed)
 
 dtype = torch.float32
-device = 'cpu'
+device = 'cuda'
 
 params = nn.ParameterDict({
     'reversalEx': nn.Parameter(torch.tensor([5.0], dtype=dtype).to(device)),
@@ -61,8 +61,8 @@ with torch.no_grad():
     model_torch = SNSMotionVisionMerged(params_sns['dt'], shape, 1, params=params, dtype=dtype, device=device)
     model_torch.eval()
     model_torch = torch.jit.freeze(model_torch)
-    model_torch = torch.compile(model_torch)
-    # model_torch = torch.jit.optimize_for_inference(model_torch)   # slows down
+    #model_torch = torch.compile(model_torch)
+    model_torch = torch.jit.optimize_for_inference(model_torch)   # slows down
 
     stim = torch.rand(shape,dtype=dtype, device=device)
 

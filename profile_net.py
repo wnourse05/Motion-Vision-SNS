@@ -1,4 +1,4 @@
-from LivingMachines2023.utilities import load_data
+#from LivingMachines2023.utilities import load_data
 import torch
 # torch.set_num_threads(1)
 import torch.nn as nn
@@ -6,9 +6,10 @@ from motion_vision_net import SNSMotionVisionMerged
 import torch.autograd.profiler as profiler
 import torch.utils.benchmark as benchmark
 from timeit import default_timer
+import pickle
 
 
-params_sns = load_data('LivingMachines2023/params_net_20230327.pc')
+params_sns = pickle.load(open('LivingMachines2023/params_net_20230327.pc', 'rb'))
 
 dtype = torch.float32
 device = 'cpu'

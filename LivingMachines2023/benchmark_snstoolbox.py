@@ -1,18 +1,24 @@
-from LivingMachines2023.utilities import load_data
-from LivingMachines2023.motion_vision_networks import gen_motion_vision_no_output
+from motion_vision_networks import gen_motion_vision_no_output
 import torch
 from timeit import default_timer
 from tqdm import tqdm
 import pickle
 import numpy as np
+import blosc
 
-params_sns = load_data('LivingMachines2023/params_net_20230327.pc')
+filename = 'params_net_20230327.pc'
+with open(filename, 'rb') as f:
+        compressed = f.read()
+decompressed = blosc.decompress(compressed)
+params_sns = pickle.loads(decompressed)
 
 dtype = torch.float32
-device = 'cpu'
+device = 'cuda'
 rows = np.geomspace(3,24)
 cols = np.geomspace(5,64)
-num_trials = 100
+rows = [3,19,24,38,77,154,308,616,1232]
+cols = [5,51,64,102,205,410,820,1640,3280]
+num_trials = 10
 low_percentile = 0.05
 high_percentile = 0.95
 
@@ -55,7 +61,7 @@ with torch.no_grad():
                 'var': var,
                 'low': low,
                 'upper': upp}
-        name = 'vary_size_snstorch_'+device+'.p'
+        name = '../vary_size_snstoolbox_'+device+'.p'
         pickle.dump(data, open(name, 'wb'))
 print(average)
 print(std)

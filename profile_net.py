@@ -17,7 +17,7 @@ decompressed = blosc.decompress(compressed)
 params_sns = pickle.loads(decompressed)
 
 dtype = torch.float32
-device = 'cuda'
+device = 'cpu'
 
 params = nn.ParameterDict({
     'reversalEx': nn.Parameter(torch.tensor([5.0], dtype=dtype).to(device)),
@@ -55,7 +55,7 @@ params = nn.ParameterDict({
     'conductanceSFOff': nn.Parameter(torch.tensor([0.5],dtype=dtype).to(device)),
 })
 
-shape = [24,64]
+shape = [1232,3280]
 with torch.no_grad():
     # torch.jit.enable_onednn_fusion(True)  # slower
     model_torch = SNSMotionVisionMerged(params_sns['dt'], shape, 1, params=params, dtype=dtype, device=device)
@@ -97,7 +97,7 @@ with torch.no_grad():
     for i in range(5):
         model_torch(stim.to(device))
 
-    num_samples = 1000
+    num_samples = 10
     num_threads = torch.get_num_threads()
     # num_threads = 1
     print(f'Benchmarking on {num_threads} threads')

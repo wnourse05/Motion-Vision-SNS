@@ -15,11 +15,13 @@ decompressed = blosc.decompress(compressed)
 params_sns = pickle.loads(decompressed)
 
 dtype = torch.float32
-device = 'cuda'
+device = 'cpu'
 platform = 'jetson'
-rows = np.geomspace(3,24, num=10)
-cols = np.geomspace(5,64, num=10)
-num_trials = 100
+#rows = np.geomspace(3,24, num=10)
+#cols = np.geomspace(5,64, num=10)
+rows = [3,19,24,38,77,154,308,616,1232]
+cols = [5,51,64,102,205,410,820,1640,3280]
+num_trials = 10
 low_percentile = 0.05
 high_percentile = 0.95
 

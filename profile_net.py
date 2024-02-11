@@ -77,7 +77,7 @@ with torch.no_grad():
     for i in range(50):
         model_torch(stim)
       
-    num_samples = 1000
+    num_samples = 10000
     num_threads = torch.get_num_threads()
     num_threads = 1
     print(f'Benchmarking on {num_threads} threads')

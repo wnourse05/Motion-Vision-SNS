@@ -13,7 +13,7 @@ decompressed = blosc.decompress(compressed)
 params_sns = pickle.loads(decompressed)
 
 dtype = torch.float32
-device = 'cuda'
+device = 'cpu'
 rows = np.geomspace(3,24)
 cols = np.geomspace(5,64)
 rows = [3,19,24,38,77,154,308,616,1232]

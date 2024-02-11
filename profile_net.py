@@ -8,6 +8,8 @@ import torch.utils.benchmark as benchmark
 from timeit import default_timer
 import pickle
 import blosc
+import onnx
+import onnxruntime
 
 
 filename = 'LivingMachines2023/params_net_20230327.pc'
@@ -55,51 +57,29 @@ params = nn.ParameterDict({
     'conductanceSFOff': nn.Parameter(torch.tensor([0.5],dtype=dtype).to(device)),
 })
 
-shape = [1232,3280]
+shape = [24,64]
 with torch.no_grad():
     # torch.jit.enable_onednn_fusion(True)  # slower
     model_torch = SNSMotionVisionMerged(params_sns['dt'], shape, 1, params=params, dtype=dtype, device=device)
     model_torch.eval()
+        
+    # Jetson special
     model_torch = torch.jit.freeze(model_torch)
-    #model_torch = torch.compile(model_torch)
-    model_torch = torch.jit.optimize_for_inference(model_torch)   # slows down
+    model_torch = torch.jit.optimize_for_inference(model_torch)
+    
+    # Desktop
+    #model_torch = torch.jit.freeze(model_torch)
+    #model_torch = torch.compile(model_torch)				
 
     stim = torch.rand(shape,dtype=dtype, device=device)
-
-    shape_emd = [x - 2 for x in shape]
-    state_input = torch.zeros(shape, dtype=dtype).to(device)
-    state_bp_on_input = torch.ones(shape, dtype=dtype).to(device)
-    state_bp_on_fast = torch.zeros(shape, dtype=dtype).to(device)
-    state_bp_on_slow = torch.zeros(shape, dtype=dtype).to(device)
-    state_bp_on_output = torch.ones(shape, dtype=dtype).to(device)
-    state_lowpass = torch.ones(shape, dtype=dtype).to(device)
-    state_bp_off_input = torch.ones(shape, dtype=dtype).to(device)
-    state_bp_off_fast = torch.zeros(shape, dtype=dtype).to(device)
-    state_bp_off_slow = torch.zeros(shape, dtype=dtype).to(device)
-    state_bp_off_output = torch.ones(shape, dtype=dtype).to(device)
-    state_enhance_on = torch.ones(shape, dtype=dtype).to(device)
-    state_direct_on = torch.zeros(shape, dtype=dtype).to(device)
-    state_suppress_on = torch.zeros(shape, dtype=dtype).to(device)
-    state_enhance_off = torch.ones(shape, dtype=dtype).to(device)
-    state_direct_off = torch.zeros(shape, dtype=dtype).to(device)
-    state_suppress_off = torch.zeros(shape, dtype=dtype).to(device)
-    state_ccw_on = torch.zeros(shape_emd, dtype=dtype).to(device)
-    state_cw_on = torch.zeros(shape_emd, dtype=dtype).to(device)
-    state_ccw_off = torch.zeros(shape_emd, dtype=dtype).to(device)
-    state_cw_off = torch.zeros(shape_emd, dtype=dtype).to(device)
-    state_horizontal = torch.zeros(2, dtype=dtype).to(device)
-    states = [state_input, state_bp_on_input, state_bp_on_fast, state_bp_on_slow, state_bp_on_output, state_lowpass,
-              state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output, state_enhance_on,
-              state_direct_on, state_suppress_on, state_enhance_off, state_direct_off, state_suppress_off, state_ccw_on,
-              state_cw_on, state_ccw_off, state_cw_off, state_horizontal]
-
+    
     # Warmup
-    for i in range(5):
-        model_torch(stim.to(device))
-
-    num_samples = 10
+    for i in range(50):
+        model_torch(stim)
+      
+    num_samples = 1000
     num_threads = torch.get_num_threads()
-    # num_threads = 1
+    num_threads = 1
     print(f'Benchmarking on {num_threads} threads')
 
     # with profiler.profile(with_stack=False, profile_memory=True) as prof:
@@ -114,8 +94,8 @@ with torch.no_grad():
         globals={'x': stim},
         num_threads=num_threads
     )
-
-    print(timer.timeit(num_samples))
+    #print(timer.timeit(num_samples))
+    
     times = torch.zeros(num_samples)
     for i in range(num_samples):
         start = default_timer()

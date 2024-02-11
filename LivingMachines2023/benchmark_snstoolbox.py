@@ -60,7 +60,8 @@ with torch.no_grad():
                 'std': std,
                 'var': var,
                 'low': low,
-                'upper': upp}
+                'upper': upp,
+                'avg': average}
         name = '../vary_size_snstoolbox_'+device+'.p'
         pickle.dump(data, open(name, 'wb'))
 print(average)

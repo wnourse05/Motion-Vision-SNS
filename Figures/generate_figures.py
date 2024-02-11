@@ -31,7 +31,12 @@ def camera_latency():
     plt.xscale('log')
     plt.legend()
 
+def toolbox_vs_torch():
+    toolbox_cpu = pickle.load(open('vary_size_snstoolbox_cpu.p', 'rb'))
+    print()
+
 if __name__ == "__main__":
     desired_performance()
     camera_latency()
+    toolbox_vs_torch()
     plt.show()

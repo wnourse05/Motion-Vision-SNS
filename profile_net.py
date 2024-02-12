@@ -104,7 +104,7 @@ with torch.no_grad():
         end = default_timer()
         times[i] = (end-start)*1000
     data = {'rawTimes': times}
-    pickle.dump(data, open('headless_profile.p','wb'))
+    pickle.dump(data, open('Figures/headless_profile.p', 'wb'))
     print(torch.mean(times))
     print(torch.std(times))
     print(torch.var(times))

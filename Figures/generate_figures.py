@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pickle
 import numpy as np
+import torch
 
 def desired_performance():
     data = pickle.load(open('desiredPerformance.p', 'rb'))
@@ -9,6 +10,7 @@ def desired_performance():
     plt.plot(data['samplePts'], data['magnitude'])
     plt.xlabel('Rotational Velocity (rad/s)')
     plt.ylabel('Neural Average Magnitude')
+    plt.yscale('log')
     plt.title('Desired Neural Magnitude Across Rotational Velocity')
 
 def camera_latency():
@@ -52,8 +54,53 @@ def toolbox_vs_torch():
     plt.yscale('log')
     plt.legend()
 
+def headless_performance():
+    data = pickle.load(open('headless_profile.p', 'rb'))
+    times = data['rawTimes']
+    median = torch.median(times)
+    mean = torch.mean(times)
+    (mode,_) = torch.mode(times)
+    low = torch.quantile(times,0.05)
+    high = torch.quantile(times, 0.95)
+    print(high)
+    x = np.arange(0,len(times))
+
+    plt.figure()
+    plt.scatter(x,times, label='Times')
+    plt.axhline(y=median, color='black', label='Median')
+    plt.axhline(y=mode, linestyle='-.', color='black', label='Mode')
+    plt.axhline(y=mean, linestyle=(5, (10, 3)), color='black', label='Mean')
+    plt.axhline(y=low, linestyle=':', color='black', label='5%')
+    plt.axhline(y=high, linestyle='--', color='black', label='95%')
+    plt.xlabel('Trial')
+    plt.ylabel('Step Time (ms)')
+    # plt.yscale('log', base=10)
+    plt.legend()
+
+    plt.figure()
+    plt.scatter(x, times, label='Times')
+    plt.axhline(y=median, color='black', label='Median')
+    plt.axhline(y=mode, linestyle='-.', color='black', label='Mode')
+    plt.axhline(y=mean, linestyle=(5, (10, 3)), color='black', label='Mean')
+    plt.axhline(y=low, linestyle=':', color='black', label='5%')
+    plt.axhline(y=high, linestyle='--', color='black', label='95%')
+    plt.xlabel('Trial')
+    plt.ylabel('Step Time (ms)')
+    # plt.yscale('log', base=10)
+    plt.ylim([2.2,3])
+    plt.legend()
+
+    # counts, bins = np.histogram(times, 100)
+    # plt.figure()
+    # plt.title('Jetson Orin Nano Step Time')
+    # plt.hist(bins[:-1], bins, weights=counts)
+    # plt.xlabel('Step Time (ms)')
+    # plt.ylabel('Number of Trials')
+
+
 if __name__ == "__main__":
-    # desired_performance()
-    # camera_latency()
+    desired_performance()
+    camera_latency()
     toolbox_vs_torch()
+    headless_performance()
     plt.show()

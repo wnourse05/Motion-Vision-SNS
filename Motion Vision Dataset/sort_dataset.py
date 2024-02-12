@@ -5,27 +5,31 @@ from PIL import Image
 
 rng = np.random.default_rng(seed=0) # Random number generator
 
-data = pickle.load(open('dataset.p', 'rb')) # Load data_sns_toolbox
+data = pickle.load(open('dataset.p', 'rb')) # Load data
 
-images = np.moveaxis(data['data_sns_toolbox'],0,2)  # Pull image data_sns_toolbox, and reorder axes
+images = data['data']
 
-labels = np.repeat(data['labels'], 2)    # Double the labels, because the dataset has left and right split
+labels = data['labels']
 # i_sorted = np.argsort(labels)
 # labels_sorted = labels[i_sorted]
+
 
 num_samples = len(labels)    # Number of samples
 print('%i Samples'%num_samples)
 counts, _ = np.histogram(labels) # Number of each velocity available
 bins = np.unique(labels) # velocity categories
 num_categories = len(bins)
+print('%i Categories'%num_categories)
+ratio_test = 0.2
 
 i_random = rng.choice(num_samples, num_samples) # randomized, non-repeating indices
 
 # Test/Train breakdown
-num_test = 40*9
-num_per_category = 40
+num_test = num_categories*round(ratio_test*num_samples/num_categories)
+num_per_category = num_test/num_categories
 num_train = num_samples - num_test
 print('Test Size:  %i'%num_test)
+print('Test Number per Category: %i'%num_per_category)
 print('Train Size: %i'%num_train)
 
 set_test = None
@@ -36,15 +40,15 @@ labels_train = None
 for i in range(num_samples):
     print('%i/%i'%(i+1,num_samples))
     vel = labels[i_random[i]]
-    image = images[:,:,:,i_random[i]]
+    image = images[i_random[i],:,:,:]
     name = 'gifs/%.2f_%i.gif'%(vel,i)
     frames = []
-    for j in range(90):
+    for j in range(30):
         # print('j = %i'%j)
         if j == 0:
-            frames = [Image.fromarray(image[:,:,j])]
+            frames = [Image.fromarray(image[j,:,:])]
         else:
-            frames.append(Image.fromarray(image[:,:,j]))
+            frames.append(Image.fromarray(image[j,:,:]))
     frames[0].save(name, save_all=True, append_images=frames[1:], duration=50, loop=0)
     if labels_test is None:
         print('Creating Test Set')
@@ -73,8 +77,8 @@ for i in range(num_samples):
 print(len(labels_test))
 print(len(labels_train))
 
-data_train = {'data_sns_toolbox':set_train, 'labels': labels_train}
-data_test = {'data_sns_toolbox':set_test, 'labels': labels_test}
+data_train = {'data':set_train, 'labels': labels_train}
+data_test = {'data':set_test, 'labels': labels_test}
 
 pickle.dump(data_test, open('set_test.p', 'wb'))
 pickle.dump(data_train, open('set_train.p', 'wb'))

@@ -103,6 +103,8 @@ with torch.no_grad():
         # output = states[20]#.to('cpu')
         end = default_timer()
         times[i] = (end-start)*1000
+    data = {'rawTimes': times}
+    pickle.dump(data, open('headless_profile.p','wb'))
     print(torch.mean(times))
     print(torch.std(times))
     print(torch.var(times))

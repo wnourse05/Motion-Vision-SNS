@@ -135,3 +135,6 @@ Neuron Data/
 
 Motion Vision Dataset/dataset.p
 Motion Vision Dataset/dataset_nearest.p
+Motion Vision Dataset/dataset_area.p
+Motion Vision Dataset/set_test.p
+Motion Vision Dataset/set_train.p

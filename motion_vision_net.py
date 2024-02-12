@@ -629,11 +629,19 @@ class SNSMotionVisionMerged(jit.ScriptModule):
         shape_post_conv = [x - (shape_field - 1) for x in shape_input]
         shape_emd = [x - 2 for x in shape_post_conv]
         flat_shape_emd = shape_emd[0]*shape_emd[1]
+        num_zero = 6*shape_emd[0]
+        if shape_emd[1] > 6:
+            flat_shape_emd_corrected = flat_shape_emd-num_zero
+        else:
+            flat_shape_emd_corrected = flat_shape_emd
 
         g_ex_full = self.params['gainHorizontal']/(self.params['reversalEx']-self.params['gainHorizontal'])
         g_in_full = (-self.params['gainHorizontal']*self.params['reversalEx'])/(self.params['reversalIn']*(self.params['reversalEx']-self.params['gainHorizontal']))
-        g_ex_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + g_ex_full/flat_shape_emd
-        g_in_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + g_in_full / flat_shape_emd
+        g_ex_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + g_ex_full/flat_shape_emd_corrected
+        g_in_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + g_in_full / flat_shape_emd_corrected
+        if shape_emd[1] > 6:
+            g_ex_tensor[(int(shape_emd[1]/2)-3):(int(shape_emd[1]/2)+3)] = 0.0
+            g_in_tensor[(int(shape_emd[1]/2)-3):(int(shape_emd[1]/2)+3)] = 0.0
         reversal_ex_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + self.params['reversalEx']
         reversal_in_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + self.params['reversalIn']
 

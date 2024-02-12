@@ -39,8 +39,8 @@ def get_stimulus():
                             [1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0]])
     stim_0 = torch.vstack((torch.flatten(frame_0), torch.flatten(frame_1), torch.flatten(frame_2), torch.flatten(frame_3), torch.flatten(frame_4), torch.flatten(frame_5)))
     stim_0_full = torch.cat((frame_0.unsqueeze(0), frame_1.unsqueeze(0), frame_2.unsqueeze(0), frame_3.unsqueeze(0), frame_4.unsqueeze(0), frame_5.unsqueeze(0)))
-    stim_0_full = torch.cat((frame_5.unsqueeze(0), frame_4.unsqueeze(0), frame_3.unsqueeze(0), frame_2.unsqueeze(0),
-                             frame_1.unsqueeze(0), frame_0.unsqueeze(0)))
+    # stim_0_full = torch.cat((frame_5.unsqueeze(0), frame_4.unsqueeze(0), frame_3.unsqueeze(0), frame_2.unsqueeze(0),
+    #                          frame_1.unsqueeze(0), frame_0.unsqueeze(0)))
     stim_90 = torch.vstack((torch.flatten(torch.rot90(frame_0)), torch.flatten(torch.rot90(frame_1)), torch.flatten(torch.rot90(frame_2)), torch.flatten(torch.rot90(frame_3)), torch.flatten(torch.rot90(frame_4)), torch.flatten(torch.rot90(frame_5))))
     stim_180 = torch.flipud(stim_0)
     stim_270 = torch.flipud(stim_90)
@@ -104,6 +104,7 @@ device = 'cpu'
 
 interval = convert_deg_vel_to_interval(vel, params_sns['dt'])
 stim = torch.cat((stims['full'], stims['full'], stims['full'], stims['full'], stims['full'])).to(device)
+stim = stims['full']
 
 params = nn.ParameterDict({
     'reversalEx': nn.Parameter(torch.tensor([5.0], dtype=dtype).to(device)),
@@ -141,6 +142,8 @@ params = nn.ParameterDict({
     'conductanceSFOff': nn.Parameter(torch.tensor([0.5],dtype=dtype).to(device)),
 })
 model_torch = SNSMotionVisionMerged(params_sns['dt'],(7,7), 1, params=params, dtype=dtype, device=device)
+model_torch.eval()
+model_torch = torch.jit.freeze(model_torch)
 model_torch = torch.compile(model_torch)
 
 num_samples = stim.shape[0]
@@ -151,7 +154,7 @@ data = [data_cw, data_ccw]
 
 stim_example = torch.zeros([len(t),3])
 
-shape = [7,7]
+shape = [12,12]
 shape_emd = [x - 2 for x in shape]
 # state_input = torch.zeros(shape, dtype=dtype).to(device)
 # state_bp_on_input = torch.ones(shape, dtype=dtype).to(device)
@@ -211,6 +214,7 @@ plt.plot(t, data[1].detach().to('cpu').numpy(), label='ccw')
 plt.title('Prediction')
 plt.xlabel('t (ms)')
 plt.ylabel('U (mV)')
+# plt.ylim([-2,2])
 plt.legend()
 
 plt.show()

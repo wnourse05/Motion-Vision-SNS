@@ -190,8 +190,8 @@ def collect_data_sns_toolbox(vel, angle, stims, center=False, params=None, scale
     dt = params['dt']
 
     interval = convert_deg_vel_to_interval(vel, dt)
-    # stim = torch.vstack((stims['%i'%angle], stims['%i'%angle], stims['%i'%angle], stims['%i'%angle])).to(device)
-    stim = torch.vstack((stims['%i' % angle],)).to(device)
+    stim = torch.vstack((stims['%i'%angle], stims['%i'%angle], stims['%i'%angle], stims['%i'%angle],stims['%i'%angle])).to(device)
+    # stim = torch.vstack((stims['%i' % angle],)).to(device)
     data = run_sns_toolbox(model, net, stim, device, flat_size, dt, interval)
     return data, net
 
@@ -209,6 +209,7 @@ device = 'cpu'
 
 interval = convert_deg_vel_to_interval(vel, params_sns['dt'])
 stim = stims['full'].to(device)
+stim = torch.cat((stims['full'], stims['full'], stims['full'], stims['full'], stims['full'])).to(device)
 
 params = nn.ParameterDict({
     'reversalEx': nn.Parameter(torch.tensor([5.0], dtype=dtype).to(device)),
@@ -246,6 +247,8 @@ params = nn.ParameterDict({
     'conductanceSFOff': nn.Parameter(torch.tensor([0.5],dtype=dtype).to(device)),
 })
 model_torch = SNSMotionVisionEye(params_sns['dt'],(7,7), 1, params=params, dtype=dtype, device=device)
+model_torch.eval()
+model_torch = torch.jit.freeze(model_torch)
 model_torch = torch.compile(model_torch)
 
 num_samples = stim.shape[0]

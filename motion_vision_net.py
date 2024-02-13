@@ -137,6 +137,13 @@ class SNSBandpass(jit.ScriptModule):
         # return [state_input, state_fast, state_slow, state_output]
         return self.state_output
 
+    @jit.script_method
+    def reset(self):
+        self.state_input = self.params['input_init']
+        self.state_fast = self.params['fast_init']
+        self.state_slow = self.params['slow_init']
+        self.state_output = self.params['output_init']
+
 class SNSMotionVisionEye(jit.ScriptModule):
     def __init__(self, dt, shape_input, shape_field, params=None, device=None, dtype=torch.float32, generator=None):
         super().__init__()
@@ -634,6 +641,23 @@ class SNSMotionVisionEye(jit.ScriptModule):
 
         return self.state_ccw_on, self.state_cw_on, self.state_ccw_off, self.state_cw_off
 
+    @jit.script_method
+    def reset(self):
+        self.state_input = self.input.params['init']
+        self.bandpass_on.reset()
+        self.state_lowpass = self.lowpass.params['init']
+        self.bandpass_off.reset()
+        self.state_enhance_on = self.enhance_on.params['init']
+        self.state_direct_on = self.direct_on.params['init']
+        self.state_suppress_on = self.suppress_on.params['init']
+        self.state_enhance_off = self.enhance_off.params['init']
+        self.state_direct_off = self.direct_off.params['init']
+        self.state_suppress_off = self.suppress_off.params['init']
+        self.state_ccw_on = self.ccw_on.params['init']
+        self.state_cw_on = self.cw_on.params['init']
+        self.state_ccw_off = self.ccw_off.params['init']
+        self.state_cw_off = self.cw_off.params['init']
+
 class SNSMotionVisionMerged(jit.ScriptModule):
     def __init__(self, dt, shape_input, shape_field, params=None, device=None, dtype=torch.float32, generator=None):
         super().__init__()
@@ -696,6 +720,8 @@ class SNSMotionVisionMerged(jit.ScriptModule):
         })
         if params is not None:
             self.params.update(params)
+        self.dt = dt
+        self.device = device
         self.eye = SNSMotionVisionEye(dt, shape_input, shape_field, params=self.params, device=device, dtype=dtype,
                                       generator=None)
         shape_post_conv = [x - (shape_field - 1) for x in shape_input]
@@ -775,6 +801,11 @@ class SNSMotionVisionMerged(jit.ScriptModule):
         #  state_suppress_off, state_ccw_on, state_cw_on, state_ccw_off, state_cw_off, state_horizontal]
 
         return self.state_horizontal
+
+    @jit.script_method
+    def reset(self):
+        self.eye.reset()
+        self.state_horizontal = torch.zeros(2, dtype=self.dtype, device=self.device)
 
 
 if __name__ == "__main__":

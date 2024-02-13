@@ -10,6 +10,23 @@ def __calc_cap_from_cutoff__(cutoff):
     cap = 1000/(2*np.pi*cutoff)
     return cap
 
+def __calc_2d_field__(amp_cen, amp_sur, std_cen, std_sur, shape_field, reversal_ex, reversal_in):
+    axis = np.arange(-(5*(shape_field-1)/2), 5*((shape_field-1)/2+1), 5)
+    conductance = torch.zeros([shape_field, shape_field])
+    reversal = torch.zeros([shape_field, shape_field])
+    for i in range(5):
+        for j in range(5):
+            target = -1 * (amp_cen * torch.exp(-(axis[i] ** 2 + axis[j] ** 2) / (2 * std_cen)) - amp_sur * torch.exp(
+                -(axis[i] ** 2 + axis[j] ** 2) / (2 * std_sur)))
+            if target >= 0:
+                reversal[i,j] = reversal_ex
+            else:
+                reversal[i,j] = reversal_in
+            conductance[i,j] = torch.clamp(target/(reversal[i,j]-target),0)
+    return conductance, reversal
+
+
+
 class SNSBandpass(jit.ScriptModule):
     def __init__(self, shape, params=None, device=None, dtype=torch.float32, generator=None):
         super().__init__()
@@ -43,7 +60,7 @@ class SNSBandpass(jit.ScriptModule):
             self.params.update(params)
 
         k = 1.0
-        k = 1.141306594552181
+        # k = 1.141306594552181
         activity_range = 1.0
         g_in = (-activity_range) / self.params['reversalIn']
         g_bd = (-k * activity_range) / (self.params['reversalIn'] + k * activity_range)
@@ -130,30 +147,52 @@ class SNSMotionVisionEye(jit.ScriptModule):
             'reversalEx': nn.Parameter(torch.tensor([2.0], dtype=dtype).to(device)),
             'reversalIn': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device)),
             'reversalMod': nn.Parameter(torch.tensor([0.0], dtype=dtype).to(device)),
-            'freqFast': nn.Parameter(torch.rand(1,dtype=dtype, generator=generator).to(device)*1000),
-            'kernelConductanceInBO': nn.Parameter(torch.rand(shape_field, dtype=dtype, generator=generator).to(device)),
-            'kernelReversalInBO': nn.Parameter((2*torch.rand(shape_field, generator=generator)-1).to(device)),
-            'freqBOFast': nn.Parameter(torch.rand(1,dtype=dtype, generator=generator).to(device)*1000),
-            'freqBOSlow': nn.Parameter(torch.rand(1,dtype=dtype, generator=generator).to(device)*1000),
-            'kernelConductanceInL': nn.Parameter(torch.rand(shape_field, dtype=dtype, generator=generator).to(device)),
-            'kernelReversalInL': nn.Parameter((2*torch.rand(shape_field, generator=generator)-1).to(device)),
-            'freqL': nn.Parameter(torch.rand(1,dtype=dtype, generator=generator).to(device)*1000),
-            'kernelConductanceInBF': nn.Parameter(torch.rand(shape_field, dtype=dtype, generator=generator).to(device)),
-            'kernelReversalInBF': nn.Parameter((2*torch.rand(shape_field, generator=generator)-1).to(device)),
-            'freqBFFast': nn.Parameter(torch.rand(1,dtype=dtype, generator=generator).to(device)*1000),
-            'freqBFSlow': nn.Parameter(torch.rand(1,dtype=dtype, generator=generator).to(device)*1000),
+            'freqFast': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'ampCenBO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdCenBO': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'ampSurBO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdSurBO': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqBOFast': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'freqBOSlow': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'ampCenL': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdCenL': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'ampSurL': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdSurL': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqL': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'ampCenBF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdCenBF': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'ampSurBF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdSurBF': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqBFFast': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'freqBFSlow': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
             'conductanceLEO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'freqEO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasEO': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
             'conductanceBODO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'freqDO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasDO': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
             'conductanceDOSO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'freqSO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasSO': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'conductanceLEF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqEF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasEF': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'conductanceBFDF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqDF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasDF': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'conductanceDFSF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqSF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasSF': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
             'conductanceEOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'conductanceDOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'conductanceSOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'conductanceEFOff': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'conductanceDFOff': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'conductanceSFOff': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasOn': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'freqOff': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasOff': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1)
         })
         if params is not None:
             self.params.update(params)
@@ -175,9 +214,12 @@ class SNSMotionVisionEye(jit.ScriptModule):
         # Lamina
         shape_post_conv = [x - (shape_field - 1) for x in shape_input]
         # Bo
+        conductance, reversal = __calc_2d_field__(self.params['ampCenBO'], self.params['ampSurBO'],
+                                                  self.params['stdCenBO'], self.params['stdSurBO'], shape_field,
+                                                  self.params['reversalEx'], self.params['reversalIn'])
         syn_in_bo_params = nn.ParameterDict({
-            'conductance': nn.Parameter(self.params['kernelConductanceInBO'].data, requires_grad=False),
-            'reversal': nn.Parameter(self.params['kernelReversalInBO'].data, requires_grad=False)
+            'conductance': nn.Parameter(conductance, requires_grad=False),
+            'reversal': nn.Parameter(reversal, requires_grad=False)
         })
         self.syn_input_bandpass_on = m.NonSpikingChemicalSynapseConv(1,1,shape_field, conv_dim=2,
                                                                      params=syn_in_bo_params, device=device, dtype=dtype)
@@ -213,9 +255,12 @@ class SNSMotionVisionEye(jit.ScriptModule):
         })
         self.bandpass_on = SNSBandpass(shape_post_conv, params=nrn_bo_params, device=device, dtype=dtype)
         # L
+        conductance, reversal = __calc_2d_field__(self.params['ampCenL'], self.params['ampSurL'],
+                                                  self.params['stdCenL'], self.params['stdSurL'], shape_field,
+                                                  self.params['reversalEx'], self.params['reversalIn'])
         syn_in_l_params = nn.ParameterDict({
-            'conductance': nn.Parameter(self.params['kernelConductanceInBO'].data, requires_grad=False),
-            'reversal': nn.Parameter(self.params['kernelReversalInBO'].data, requires_grad=False)
+            'conductance': nn.Parameter(conductance, requires_grad=False),
+            'reversal': nn.Parameter(reversal, requires_grad=False)
         })
         self.syn_input_lowpass = m.NonSpikingChemicalSynapseConv(1, 1, shape_field, conv_dim=2,
                                                                  params=syn_in_l_params, device=device, dtype=dtype)
@@ -231,9 +276,12 @@ class SNSMotionVisionEye(jit.ScriptModule):
         self.lowpass = m.NonSpikingLayer(shape_post_conv, params=nrn_l_params, device=device, dtype=dtype)
         self.state_lowpass = torch.zeros(shape_post_conv, dtype=dtype, device=device)+nrn_l_params['init']
         # Bf
+        conductance, reversal = __calc_2d_field__(self.params['ampCenBF'], self.params['ampSurBF'],
+                                                  self.params['stdCenBF'], self.params['stdSurBF'], shape_field,
+                                                  self.params['reversalEx'], self.params['reversalIn'])
         syn_in_bf_params = nn.ParameterDict({
-            'conductance': nn.Parameter(self.params['kernelConductanceInBF'].data, requires_grad=False),
-            'reversal': nn.Parameter(self.params['kernelReversalInBF'].data, requires_grad=False)
+            'conductance': nn.Parameter(conductance, requires_grad=False),
+            'reversal': nn.Parameter(reversal, requires_grad=False)
         })
         self.syn_input_bandpass_off = m.NonSpikingChemicalSynapseConv(1, 1, shape_field, conv_dim=2,
                                                                       params=syn_in_bf_params, device=device, dtype=dtype)
@@ -285,7 +333,7 @@ class SNSMotionVisionEye(jit.ScriptModule):
             'leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype, device=device).to(device),
                                  requires_grad=False),
             'rest': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
-            'bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasEO'] + torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
             'init': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
         })
         self.enhance_on = m.NonSpikingLayer(shape_post_conv, params=nrn_eo_params, device=device, dtype=dtype)
@@ -304,7 +352,7 @@ class SNSMotionVisionEye(jit.ScriptModule):
             'leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
             'rest': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
             # 'bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
-            'bias': nn.Parameter(1.0921092205690466 + torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasDO'] + torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
             'init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
         })
         self.direct_on = m.NonSpikingLayer(shape_post_conv, params=nrn_do_params, device=device, dtype=dtype)
@@ -322,7 +370,7 @@ class SNSMotionVisionEye(jit.ScriptModule):
                                 requires_grad=False),
             'leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
             'rest': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
-            'bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasSO'] + torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
             'init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
         })
         self.suppress_on = m.NonSpikingLayer(shape_post_conv, params=nrn_so_params, device=device, dtype=dtype)
@@ -341,7 +389,7 @@ class SNSMotionVisionEye(jit.ScriptModule):
                                 requires_grad=False),
             'leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
             'rest': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
-            'bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasEF'] + torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
             'init': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
         })
         self.enhance_off = m.NonSpikingLayer(shape_post_conv, params=nrn_ef_params, device=device, dtype=dtype)
@@ -360,7 +408,7 @@ class SNSMotionVisionEye(jit.ScriptModule):
                                 requires_grad=False),
             'leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
             'rest': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
-            'bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device),
+            'bias': nn.Parameter(self.params['biasDF'] + torch.zeros(shape_post_conv, dtype=dtype).to(device),
                                  requires_grad=False),
             'init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
         })
@@ -379,7 +427,7 @@ class SNSMotionVisionEye(jit.ScriptModule):
                                 requires_grad=False),
             'leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
             'rest': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
-            'bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasSF'] + torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
             'init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
         })
         self.suppress_off = m.NonSpikingLayer(shape_post_conv, params=nrn_sf_params, device=device, dtype=dtype)
@@ -417,7 +465,7 @@ class SNSMotionVisionEye(jit.ScriptModule):
                                 requires_grad=False),
             'leak': nn.Parameter(torch.ones(shape_emd, dtype=dtype).to(device), requires_grad=False),
             'rest': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
-            'bias': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasOn'] + torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
             'init': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
         })
         self.ccw_on = m.NonSpikingLayer(shape_emd, params=nrn_ccw_on_params, device=device, dtype=dtype)
@@ -444,7 +492,7 @@ class SNSMotionVisionEye(jit.ScriptModule):
                                 requires_grad=False),
             'leak': nn.Parameter(torch.ones(shape_emd, dtype=dtype).to(device), requires_grad=False),
             'rest': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
-            'bias': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasOn'] + torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
             'init': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
         })
         self.cw_on = m.NonSpikingLayer(shape_emd, params=nrn_cw_on_params, device=device, dtype=dtype)
@@ -481,7 +529,7 @@ class SNSMotionVisionEye(jit.ScriptModule):
                                 requires_grad=False),
             'leak': nn.Parameter(torch.ones(shape_emd, dtype=dtype).to(device), requires_grad=False),
             'rest': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
-            'bias': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasOff'] + torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
             'init': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
         })
         self.ccw_off = m.NonSpikingLayer(shape_emd, params=nrn_ccw_off_params, device=device, dtype=dtype)
@@ -508,7 +556,7 @@ class SNSMotionVisionEye(jit.ScriptModule):
                                 requires_grad=False),
             'leak': nn.Parameter(torch.ones(shape_emd, dtype=dtype).to(device), requires_grad=False),
             'rest': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
-            'bias': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasOff'] + torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
             'init': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
         })
         self.cw_off = m.NonSpikingLayer(shape_emd, params=nrn_cw_off_params, device=device, dtype=dtype)
@@ -597,30 +645,54 @@ class SNSMotionVisionMerged(jit.ScriptModule):
             'reversalIn': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device)),
             'reversalMod': nn.Parameter(torch.tensor([0.0], dtype=dtype).to(device)),
             'freqFast': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
-            'kernelConductanceInBO': nn.Parameter(torch.rand(shape_field, dtype=dtype, generator=generator).to(device)),
-            'kernelReversalInBO': nn.Parameter((2 * torch.rand(shape_field, generator=generator) - 1).to(device)),
+            'ampCenBO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdCenBO': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'ampSurBO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdSurBO': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'freqBOFast': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
             'freqBOSlow': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
-            'kernelConductanceInL': nn.Parameter(torch.rand(shape_field, dtype=dtype, generator=generator).to(device)),
-            'kernelReversalInL': nn.Parameter((2 * torch.rand(shape_field, generator=generator) - 1).to(device)),
+            'ampCenL': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdCenL': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'ampSurL': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdSurL': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'freqL': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
-            'kernelConductanceInBF': nn.Parameter(torch.rand(shape_field, dtype=dtype, generator=generator).to(device)),
-            'kernelReversalInBF': nn.Parameter((2 * torch.rand(shape_field, generator=generator) - 1).to(device)),
+            'ampCenBF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdCenBF': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'ampSurBF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdSurBF': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'freqBFFast': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
             'freqBFSlow': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
             'conductanceLEO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'freqEO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasEO': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
             'conductanceBODO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'freqDO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasDO': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
             'conductanceDOSO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'freqSO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasSO': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'conductanceLEF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqEF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasEF': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'conductanceBFDF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqDF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasDF': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'conductanceDFSF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqSF': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasSF': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
             'conductanceEOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'conductanceDOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'conductanceSOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'conductanceEFOff': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'conductanceDFOff': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
             'conductanceSFOff': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
-            'gainHorizontal': nn.Parameter(torch.tensor([1.0], dtype=dtype).to(device))
+            'freqOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasOn': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'freqOff': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasOff': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'gainHorizontal': nn.Parameter(torch.tensor([1.0], dtype=dtype).to(device)),
+            'freqHorizontal': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasHorizontal': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
         })
         if params is not None:
             self.params.update(params)
@@ -662,13 +734,14 @@ class SNSMotionVisionMerged(jit.ScriptModule):
         self.syn_cw_in_ccw_ex = m.NonSpikingChemicalSynapseLinear(flat_shape_emd, 2,
                                                                   params=syn_cw_in_ccw_ex_params, device=device,
                                                                   dtype=dtype, generator=generator)
-        tau_fast = dt / __calc_cap_from_cutoff__(self.params['freqFast'].data)
+        tau_horizontal = dt / __calc_cap_from_cutoff__(self.params['freqHorizontal'].data)
         nrn_hc_params = nn.ParameterDict({
-            'tau': nn.Parameter((tau_fast.data + torch.zeros(2, dtype=dtype, device=device)).to(device),
+            'tau': nn.Parameter((tau_horizontal.data + torch.zeros(2, dtype=dtype, device=device)).to(device),
                                 requires_grad=False),
             'leak': nn.Parameter(torch.ones(2, dtype=dtype).to(device), requires_grad=False),
             'rest': nn.Parameter(torch.zeros(2, dtype=dtype).to(device), requires_grad=False),
-            'bias': nn.Parameter(torch.zeros(2, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasHorizontal'] + torch.zeros(2, dtype=dtype).to(device),
+                                 requires_grad=False),
             'init': nn.Parameter(torch.zeros(2, dtype=dtype).to(device), requires_grad=False)
         })
         self.horizontal = m.NonSpikingLayer(2, params=nrn_hc_params, device=device, dtype=dtype)
@@ -705,6 +778,7 @@ class SNSMotionVisionMerged(jit.ScriptModule):
 
 
 if __name__ == "__main__":
-    img_size = [24,32]
-    print(SNSBandpass(img_size))
-    print(SNSMotionVisionEye(img_size,5))
+    img_size = [24,64]
+    # print(SNSBandpass(img_size))
+    # print(SNSMotionVisionEye(img_size,5))
+    print(SNSMotionVisionMerged(2.56, img_size, 5))

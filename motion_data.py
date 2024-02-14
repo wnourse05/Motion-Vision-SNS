@@ -32,7 +32,7 @@ class ClipDataset(Dataset):
         frames = torch.as_tensor(pickle.load(open(os.path.join(self.root_dir, file_path), 'rb')), dtype=self.dtype,
                                  device=self.device)
 
-        label = class_name
+        label = float(class_name)
         return frames, label
 
 if __name__ == '__main__':
@@ -47,4 +47,6 @@ if __name__ == '__main__':
     test_dataloader = DataLoader(test, batch_size=10, shuffle=False)
 
     imgs, labels = next(iter(train_dataloader))
-    print(imgs.shape)
+    print(imgs.shape, labels)
+    img = imgs[0,0,:,:]
+    print(img.shape)

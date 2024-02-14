@@ -8,8 +8,6 @@ import torch.utils.benchmark as benchmark
 from timeit import default_timer
 import pickle
 import blosc
-import onnx
-import onnxruntime
 
 
 filename = 'LivingMachines2023/params_net_20230327.pc'
@@ -56,20 +54,22 @@ params = nn.ParameterDict({
     'conductanceDFOff': nn.Parameter(torch.tensor([params_sns['off']['g']['direct']],dtype=dtype).to(device)),
     'conductanceSFOff': nn.Parameter(torch.tensor([0.5],dtype=dtype).to(device)),
 })
+params=None
 
 shape = [24,64]
 with torch.no_grad():
     # torch.jit.enable_onednn_fusion(True)  # slower
-    model_torch = SNSMotionVisionMerged(params_sns['dt'], shape, 1, params=params, dtype=dtype, device=device)
+    model_torch = SNSMotionVisionMerged(params_sns['dt'], shape, 5, params=params, dtype=dtype, device=device)
+    model_torch = torch.jit.script(model_torch)
     model_torch.eval()
         
     # Jetson special
-    model_torch = torch.jit.freeze(model_torch)
-    model_torch = torch.jit.optimize_for_inference(model_torch)
+    # model_torch = torch.jit.freeze(model_torch)
+    # model_torch = torch.jit.optimize_for_inference(model_torch)
     
     # Desktop
-    #model_torch = torch.jit.freeze(model_torch)
-    #model_torch = torch.compile(model_torch)				
+    model_torch = torch.jit.freeze(model_torch)
+    model_torch = torch.compile(model_torch)
 
     stim = torch.rand(shape,dtype=dtype, device=device)
     
@@ -77,7 +77,7 @@ with torch.no_grad():
     for i in range(50):
         model_torch(stim)
       
-    num_samples = 10000
+    num_samples = 10
     num_threads = torch.get_num_threads()
     num_threads = 1
     print(f'Benchmarking on {num_threads} threads')
@@ -103,8 +103,9 @@ with torch.no_grad():
         # output = states[20]#.to('cpu')
         end = default_timer()
         times[i] = (end-start)*1000
+    model_torch(stim, True)
     data = {'rawTimes': times}
-    pickle.dump(data, open('Figures/headless_profile.p', 'wb'))
+    # pickle.dump(data, open('Figures/headless_profile.p', 'wb'))
     print(torch.mean(times))
     print(torch.std(times))
     print(torch.var(times))

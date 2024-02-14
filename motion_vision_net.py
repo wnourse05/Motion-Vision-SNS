@@ -27,7 +27,7 @@ def __calc_2d_field__(amp_cen, amp_sur, std_cen, std_sur, shape_field, reversal_
 
 
 
-class SNSBandpass(jit.ScriptModule):
+class SNSBandpass(nn.Module):
     def __init__(self, shape, params=None, device=None, dtype=torch.float32, generator=None):
         super().__init__()
         if device is None:
@@ -118,8 +118,9 @@ class SNSBandpass(jit.ScriptModule):
         self.output = m.NonSpikingLayer(shape, params=params_output, device=device, dtype=dtype)
         self.state_output = torch.zeros(shape, dtype=dtype, device=device) + self.params['output_init']
 
-    @jit.script_method
-    def forward(self, x):#, states):
+    def forward(self, x, reset: bool=False):#, states):
+        if reset:
+            self.reset()
         # state_input = states[0]
         # state_fast = states[1]
         # state_slow = states[2]
@@ -137,14 +138,14 @@ class SNSBandpass(jit.ScriptModule):
         # return [state_input, state_fast, state_slow, state_output]
         return self.state_output
 
-    @jit.script_method
+    @jit.export
     def reset(self):
         self.state_input = self.params['input_init']
         self.state_fast = self.params['fast_init']
         self.state_slow = self.params['slow_init']
         self.state_output = self.params['output_init']
 
-class SNSMotionVisionEye(jit.ScriptModule):
+class SNSMotionVisionEye(nn.Module):
     def __init__(self, dt, shape_input, shape_field, params=None, device=None, dtype=torch.float32, generator=None):
         super().__init__()
         if device is None:
@@ -569,8 +570,9 @@ class SNSMotionVisionEye(jit.ScriptModule):
         self.cw_off = m.NonSpikingLayer(shape_emd, params=nrn_cw_off_params, device=device, dtype=dtype)
         self.state_cw_off = torch.zeros(shape_emd, dtype=dtype, device=device)+nrn_cw_off_params['init']
 
-    @jit.script_method
-    def forward(self, x):#, states: List[torch.Tensor]):
+    def forward(self, x, reset: bool=False):#, states: List[torch.Tensor]):
+        if reset:
+            self.reset()
         # with profiler.record_function("EYE STATE COPYING"):
         # state_input = states[0]
         # state_bp_on_input = states[1]
@@ -622,9 +624,9 @@ class SNSMotionVisionEye(jit.ScriptModule):
         # print(state_input)
         # with profiler.record_function("EYE NEURAL UPDATES"):
         self.state_input = self.input(x.squeeze(), self.state_input)
-        _ = self.bandpass_on(syn_input_bandpass_on.squeeze())
+        _ = self.bandpass_on(syn_input_bandpass_on.squeeze(), reset=reset)
         self.state_lowpass = self.lowpass(torch.squeeze(syn_input_lowpass), self.state_lowpass)
-        _ = self.bandpass_off(syn_input_bandpass_off.squeeze())
+        _ = self.bandpass_off(syn_input_bandpass_off.squeeze(), reset=reset)
         self.state_enhance_on = self.enhance_on(syn_lowpass_enhance_on, self.state_enhance_on)
         self.state_direct_on = self.direct_on(syn_bandpass_on_direct_on, self.state_direct_on)
         self.state_suppress_on = self.suppress_on(syn_direct_on_suppress_on, self.state_suppress_on)
@@ -641,12 +643,10 @@ class SNSMotionVisionEye(jit.ScriptModule):
 
         return self.state_ccw_on, self.state_cw_on, self.state_ccw_off, self.state_cw_off
 
-    @jit.script_method
+    @jit.export
     def reset(self):
         self.state_input = self.input.params['init']
-        self.bandpass_on.reset()
         self.state_lowpass = self.lowpass.params['init']
-        self.bandpass_off.reset()
         self.state_enhance_on = self.enhance_on.params['init']
         self.state_direct_on = self.direct_on.params['init']
         self.state_suppress_on = self.suppress_on.params['init']
@@ -658,7 +658,7 @@ class SNSMotionVisionEye(jit.ScriptModule):
         self.state_ccw_off = self.ccw_off.params['init']
         self.state_cw_off = self.cw_off.params['init']
 
-class SNSMotionVisionMerged(jit.ScriptModule):
+class SNSMotionVisionMerged(nn.Module):
     def __init__(self, dt, shape_input, shape_field, params=None, device=None, dtype=torch.float32, generator=None):
         super().__init__()
         if device is None:
@@ -722,6 +722,7 @@ class SNSMotionVisionMerged(jit.ScriptModule):
             self.params.update(params)
         self.dt = dt
         self.device = device
+        self.dtype = dtype
         self.eye = SNSMotionVisionEye(dt, shape_input, shape_field, params=self.params, device=device, dtype=dtype,
                                       generator=None)
         shape_post_conv = [x - (shape_field - 1) for x in shape_input]
@@ -773,8 +774,9 @@ class SNSMotionVisionMerged(jit.ScriptModule):
         self.horizontal = m.NonSpikingLayer(2, params=nrn_hc_params, device=device, dtype=dtype)
         self.state_horizontal = torch.zeros(2, dtype=dtype, device=device)+nrn_hc_params['init']
 
-    @jit.script_method
-    def forward(self, x):#, states):
+    def forward(self, x, reset: bool=False):#, states):
+        if reset:
+            self.reset()
         # with profiler.record_function("MERGED STATE INPUT"):
         # state_ccw_on = states[16]
         # state_cw_on = states[17]
@@ -789,7 +791,7 @@ class SNSMotionVisionMerged(jit.ScriptModule):
         syn_ccw_off = self.syn_cw_in_ccw_ex(torch.flatten(self.eye.state_ccw_off), self.state_horizontal)
 
         # with profiler.record_function("EYE PROCESSING"):
-        _ = self.eye(x)
+        _ = self.eye(x, reset=reset)
 
         # with profiler.record_function("MERGED NEURAL UPDATE"):
         self.state_horizontal = self.horizontal(syn_ccw_on+syn_cw_on+syn_ccw_off+syn_cw_off, self.state_horizontal)
@@ -802,9 +804,8 @@ class SNSMotionVisionMerged(jit.ScriptModule):
 
         return self.state_horizontal
 
-    @jit.script_method
+    @jit.export
     def reset(self):
-        self.eye.reset()
         self.state_horizontal = torch.zeros(2, dtype=self.dtype, device=self.device)
 
 

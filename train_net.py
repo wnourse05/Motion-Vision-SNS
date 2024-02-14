@@ -225,9 +225,10 @@ def main(opt_params):
         best = data['pop_best_eval'].iloc[-1]
         print('Fitness: ' + str(best))
         i += 1
+        problem.kill_actors()
         end = time.time()
         print('Time: ' + str(end-start))
-        problem.kill_actors()
+        #problem.kill_actors()
     #print('Time:')
     #print(time.time()-start)
     test_error = validate(problem.status['best'], opt_params)

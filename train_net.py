@@ -178,7 +178,7 @@ def validate(solution, opt_params):
     # Load training data
     if opt_params['debug']:
         print('Loading training data')
-    test_dataloader = DataLoader(opt_params['testData'], batch_size=20)#len(opt_params['testData']), shuffle=True)
+    test_dataloader = DataLoader(opt_params['testData'], batch_size=len(opt_params['testData']), shuffle=False)
     test_data, test_labels = next(iter(test_dataloader))
     test_labels = vel_to_state(test_labels)
 
@@ -200,13 +200,14 @@ def main(opt_params):
     i = 0
     best = 10000000
     print('Starting Optimization:')
+    #start = time.time()
     while i < opt_params['numGenerations'] and best > opt_params['tol']:
         # print(func + ' ' + algorithm + ' ' + str(i))
         print('Algorithm: ' + opt_params['algorithm'] + ' Generation: ' + str(i))
         start = time.time()
         solver.step()
-        end = time.time()
-        print('Eval time: %0.2f s'&end-start)
+        #end = time.time()
+        #print('Eval time: %0.2f s'&(end-start))
         data = logger.to_dataframe()
         data.to_pickle(log_filename)
         solution = problem.status['best'].values
@@ -214,6 +215,10 @@ def main(opt_params):
         best = data['pop_best_eval'].iloc[-1]
         print('Fitness: ' + str(best))
         i += 1
+        end = time.time()
+        print('Time: ' + str(end-start))
+    #print('Time:')
+    #print(time.time()-start)
     test_error = validate(problem.status['best'], opt_params)
     plt.figure()
     plt.plot(data['pop_best_eval'])

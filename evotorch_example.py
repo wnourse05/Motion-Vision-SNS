@@ -27,7 +27,7 @@ popsize = 100
 stdev_init = 5
 lr = 0.01
 tolerance = 1e-3
-num_actors = 0
+num_actors = 'max'
 # Format as Problem for evotorch
 problems = [Problem("min", sphere, solution_length=dimension, initial_bounds=(-1,1), num_actors=num_actors),
             Problem("min", rastrigin, solution_length=dimension, initial_bounds=(-5.12,5.12), num_actors=num_actors),
@@ -69,6 +69,7 @@ for k in range(len(functions)):
             best = data['pop_best_eval'].iloc[-1]
             i += 1
         data = pd.read_pickle(filename)
+        problem.kill_actors()
         plt.plot(data['pop_best_eval'], label=algorithm)
 
     plt.axhline(y=answers[k], linestyle='--', color='black', label='Solution')

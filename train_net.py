@@ -50,6 +50,11 @@ def process_args(args):
     params['boundsLower'] = torch.as_tensor(bounds['Lower Bound'], dtype=params['dtype'])
     params['boundsUpper'] = torch.as_tensor(bounds['Upper Bound'], dtype=params['dtype'])
     params['compile'] = bool(args.compile)
+    params['max'] = 2.0*params['batchSize']#torch.finfo(params['dtype']).max
+    if args.batch_validate == 'full':
+        params['batchValidate'] = args.batch_validate
+    else:
+        params['batchValidate'] = int(args.batch_validate)
 
     return params
 
@@ -149,8 +154,9 @@ class OptimizeMotionVision(Problem):
         training_labels = vel_to_state(training_labels)
 
         error = run_net(solution, self.opt_params, training_data, training_labels)
-        if torch.isnan(error):
-            error = torch.tensor([torch.finfo(self.opt_params['dtype']).max])
+        # if torch.isnan(error):
+        #     error = torch.tensor([torch.finfo(self.opt_params['dtype']).max])
+        error = torch.nan_to_num(error, nan=self.opt_params['max'])
 
         if self.opt_params['debug']:
             print('Individual error')
@@ -178,7 +184,11 @@ def validate(solution, opt_params):
     # Load training data
     if opt_params['debug']:
         print('Loading training data')
-    test_dataloader = DataLoader(opt_params['testData'], batch_size=len(opt_params['testData']), shuffle=False)
+    if opt_params['batchValidate'] == 'full':
+        num_val = len(opt_params['testData'])
+    else:
+        num_val = opt_params['batchValidate']
+    test_dataloader = DataLoader(opt_params['testData'], batch_size=num_val, shuffle=True)
     test_data, test_labels = next(iter(test_dataloader))
     test_labels = vel_to_state(test_labels)
 
@@ -217,6 +227,7 @@ def main(opt_params):
         i += 1
         end = time.time()
         print('Time: ' + str(end-start))
+        problem.kill_actors()
     #print('Time:')
     #print(time.time()-start)
     test_error = validate(problem.status['best'], opt_params)
@@ -234,19 +245,20 @@ if __name__ == "__main__":
     parser.add_argument('--dt', nargs='?', default='2.56')
     parser.add_argument('--dtype', nargs='?', choices=['float64', 'float32', 'float16'], default='float32')
     parser.add_argument('--bound_file', nargs='?', default='bounds.csv')
-    parser.add_argument('--num_generations', nargs='?', default='100')
-    parser.add_argument('--pop_size', nargs='?', default='24')
-    parser.add_argument('--algorithm', nargs='?', default='CES', choices=['CES', 'CMA-ES', 'PGPE', 'SNES', 'XNES'])
+    parser.add_argument('--num_generations', nargs='?', default='3')
+    parser.add_argument('--pop_size', nargs='?', default='16')
+    parser.add_argument('--algorithm', nargs='?', default='CMA-ES', choices=['CES', 'CMA-ES', 'PGPE', 'SNES', 'XNES'])
     parser.add_argument('--num_workers', nargs='?', default='max')
     parser.add_argument('--std', nargs='?', default='5')
     parser.add_argument('--lr', nargs='?', default='0.01')
     parser.add_argument('--parenthood_ratio', nargs='?', default='0.1')
     parser.add_argument('--tol', nargs='?', default='1e-3')
-    parser.add_argument('--batch_size', nargs='?', default='20')
+    parser.add_argument('--batch_size', nargs='?', default='4')
     parser.add_argument('--shape_field', nargs='?', default='5')
     parser.add_argument('--dir', nargs='?', default='Runs/')
     parser.add_argument('--debug', nargs='?', default='False')
     parser.add_argument('--compile', nargs='?', default='True')
+    parser.add_argument('--batch_validate', nargs='?', default='1')
     args = parser.parse_args()
     opt_params = process_args(args)
 

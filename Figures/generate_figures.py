@@ -2,12 +2,14 @@ import matplotlib.pyplot as plt
 import pickle
 import numpy as np
 import torch
+from train_net import state_to_vel
 
 def desired_performance():
     data = pickle.load(open('desiredPerformance.p', 'rb'))
-
+    print(data['magnitude'])
+    print(state_to_vel(data['magnitude']))
     plt.figure()
-    plt.plot(data['samplePts'], data['magnitude'])
+    plt.plot(data['samplePts'], data['magnitude'], marker='s')
     plt.xlabel('Rotational Velocity (rad/s)')
     plt.ylabel('Neural Average Magnitude')
     plt.yscale('log')

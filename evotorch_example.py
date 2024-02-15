@@ -22,7 +22,7 @@ def styblinski(x: torch.Tensor) -> torch.Tensor:
     return torch.sum(x.pow(4.0)-16*(x.pow(2.0))+5*x, dim=-1)/2
 
 num_generations = 1000
-dimension = 52
+dimension = 26
 popsize = 100
 stdev_init = 5
 lr = 0.01

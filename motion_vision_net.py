@@ -145,6 +145,298 @@ class SNSBandpass(nn.Module):
         self.state_slow = self.params['slow_init']
         self.state_output = self.params['output_init']
 
+class OnPathway(nn.Module):
+    def __init__(self, dt, shape_input, shape_field, params=None, device=None, dtype=torch.float32, generator=None):
+        super().__init__()
+        if device is None:
+            device = 'cpu'
+
+        self.params = nn.ParameterDict({
+            'reversalEx': nn.Parameter(torch.tensor([2.0], dtype=dtype).to(device)),
+            'reversalIn': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device)),
+            'reversalMod': nn.Parameter(torch.tensor([0.0], dtype=dtype).to(device)),
+            'freqFast': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'ampCenBO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdCenBO': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'ampSurBO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdSurBO': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqBOFast': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'freqBOSlow': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'ampCenLO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdCenLO': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'ampSurLO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdSurLO': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqLO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'conductanceLOEO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqEO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasEO': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'conductanceBODO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqDO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasDO': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'conductanceDOSO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqSO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasSO': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'conductanceEOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'conductanceDOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'conductanceSOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasOn': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+        })
+        if params is not None:
+            self.params.update(params)
+        # Network
+
+        # Retina
+        tau_fast = dt/__calc_cap_from_cutoff__(self.params['freqFast'].data)
+        nrn_input_params = nn.ParameterDict({
+            'tau': nn.Parameter((tau_fast.data + torch.zeros(shape_input, dtype=dtype, device=device)).to(device),
+                                requires_grad=False),
+            'leak': nn.Parameter(torch.ones(shape_input, dtype=dtype).to(device), requires_grad=False),
+            'rest': nn.Parameter(torch.zeros(shape_input, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(torch.zeros(shape_input, dtype=dtype).to(device), requires_grad=False),
+            'init': nn.Parameter(torch.zeros(shape_input, dtype=dtype).to(device), requires_grad=False)
+        })
+        self.input = m.NonSpikingLayer(shape_input, params=nrn_input_params, device=device, dtype=dtype)
+        self.state_input = torch.zeros(shape_input, dtype=dtype, device=device)+nrn_input_params['init']
+
+        # Lamina
+        shape_post_conv = [x - (shape_field - 1) for x in shape_input]
+        # Bo
+        conductance, reversal = __calc_2d_field__(self.params['ampCenBO'], self.params['ampSurBO'],
+                                                  self.params['stdCenBO'], self.params['stdSurBO'], shape_field,
+                                                  self.params['reversalEx'], self.params['reversalIn'])
+        syn_in_bo_params = nn.ParameterDict({
+            'conductance': nn.Parameter(conductance, requires_grad=False),
+            'reversal': nn.Parameter(reversal, requires_grad=False)
+        })
+        self.syn_input_bandpass_on = m.NonSpikingChemicalSynapseConv(1,1,shape_field, conv_dim=2,
+                                                                     params=syn_in_bo_params, device=device, dtype=dtype)
+        tau_bo_fast = dt / __calc_cap_from_cutoff__(self.params['freqBOFast'].data)
+        tau_bo_slow = dt / __calc_cap_from_cutoff__(self.params['freqBOSlow'].data)
+        nrn_bo_params = nn.ParameterDict({
+            'input_tau': nn.Parameter((tau_fast + torch.zeros(shape_post_conv, dtype=dtype, device=device)).to(device),
+                                      requires_grad=False),
+            'input_leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'input_rest': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'input_bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'input_init': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'fast_tau': nn.Parameter((tau_bo_fast + torch.zeros(shape_post_conv, dtype=dtype, device=device)).to(device),
+                                     requires_grad=False),
+            'fast_leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'fast_rest': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'fast_bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'fast_init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'slow_tau': nn.Parameter((tau_bo_slow + torch.zeros(shape_post_conv, dtype=dtype, device=device)).to(device),
+                                     requires_grad=False),
+            'slow_leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'slow_rest': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'slow_bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'slow_init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'output_tau': nn.Parameter((tau_fast + torch.zeros(shape_post_conv, dtype=dtype, device=device)).to(device),
+                                       requires_grad=False),
+            'output_leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'output_rest': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'output_bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'output_init': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'reversalIn': nn.Parameter((self.params['reversalIn'].clone().detach()).to(device), requires_grad=False),
+            'reversalEx': nn.Parameter((self.params['reversalEx'].clone().detach()).to(device), requires_grad=False),
+        })
+        self.bandpass_on = SNSBandpass(shape_post_conv, params=nrn_bo_params, device=device, dtype=dtype)
+        # L
+        conductance, reversal = __calc_2d_field__(self.params['ampCenLO'], self.params['ampSurLO'],
+                                                  self.params['stdCenLO'], self.params['stdSurLO'], shape_field,
+                                                  self.params['reversalEx'], self.params['reversalIn'])
+        syn_in_l_params = nn.ParameterDict({
+            'conductance': nn.Parameter(conductance, requires_grad=False),
+            'reversal': nn.Parameter(reversal, requires_grad=False)
+        })
+        self.syn_input_lowpass = m.NonSpikingChemicalSynapseConv(1, 1, shape_field, conv_dim=2,
+                                                                 params=syn_in_l_params, device=device, dtype=dtype)
+        tau_l = dt / __calc_cap_from_cutoff__(self.params['freqLO'].data)
+        nrn_l_params = nn.ParameterDict({
+            'tau': nn.Parameter((tau_l + torch.zeros(shape_post_conv, dtype=dtype, device=device)).to(device),
+                                requires_grad=False),
+            'leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'rest': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+            'init': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device),requires_grad=False),
+        })
+        self.lowpass = m.NonSpikingLayer(shape_post_conv, params=nrn_l_params, device=device, dtype=dtype)
+        self.state_lowpass = torch.zeros(shape_post_conv, dtype=dtype, device=device)+nrn_l_params['init']
+
+        # Medulla
+        # On
+        # EO
+        syn_l_eo_params = nn.ParameterDict({
+            'conductance': self.params['conductanceLOEO'],
+            'reversal': self.params['reversalEx']
+        })
+        self.syn_lowpass_enhance_on = m.NonSpikingChemicalSynapseElementwise(params=syn_l_eo_params, device=device,
+                                                                             dtype=dtype)
+        tau_eo = dt / __calc_cap_from_cutoff__(self.params['freqEO'].data)
+        nrn_eo_params = nn.ParameterDict({
+            'tau': nn.Parameter((tau_eo + torch.zeros(shape_post_conv, dtype=dtype, device=device)).to(device),
+                                requires_grad=False),
+            'leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype, device=device).to(device),
+                                 requires_grad=False),
+            'rest': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasEO'] + torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'init': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+        })
+        self.enhance_on = m.NonSpikingLayer(shape_post_conv, params=nrn_eo_params, device=device, dtype=dtype)
+        self.state_enhance_on = torch.zeros(shape_post_conv, dtype=dtype, device=device)+nrn_eo_params['init']
+        # DO
+        syn_bo_do_params = nn.ParameterDict({
+            'conductance': self.params['conductanceBODO'],
+            'reversal': self.params['reversalIn']
+        })
+        self.syn_bandpass_on_direct_on = m.NonSpikingChemicalSynapseElementwise(params=syn_bo_do_params, device=device,
+                                                                                dtype=dtype)
+        tau_do = dt / __calc_cap_from_cutoff__(self.params['freqDO'].data)
+        nrn_do_params = nn.ParameterDict({
+            'tau': nn.Parameter((tau_do + torch.zeros(shape_post_conv, dtype=dtype, device=device)).to(device),
+                                requires_grad=False),
+            'leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'rest': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            # 'bias': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasDO'] + torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+        })
+        self.direct_on = m.NonSpikingLayer(shape_post_conv, params=nrn_do_params, device=device, dtype=dtype)
+        self.state_direct_on = torch.zeros(shape_post_conv, dtype=dtype, device=device)+nrn_do_params['init']
+        # SO
+        syn_do_so_params = nn.ParameterDict({
+            'conductance': self.params['conductanceDOSO'],
+            'reversal': self.params['reversalEx']
+        })
+        self.syn_direct_on_suppress_on = m.NonSpikingChemicalSynapseElementwise(params=syn_do_so_params, device=device,
+                                                                                dtype=dtype)
+        tau_so = dt / __calc_cap_from_cutoff__(self.params['freqSO'].data)
+        nrn_so_params = nn.ParameterDict({
+            'tau': nn.Parameter((tau_so + torch.zeros(shape_post_conv, dtype=dtype, device=device)).to(device),
+                                requires_grad=False),
+            'leak': nn.Parameter(torch.ones(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'rest': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasSO'] + torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+            'init': nn.Parameter(torch.zeros(shape_post_conv, dtype=dtype).to(device), requires_grad=False),
+        })
+        self.suppress_on = m.NonSpikingLayer(shape_post_conv, params=nrn_so_params, device=device, dtype=dtype)
+        self.state_suppress_on = torch.zeros(shape_post_conv, dtype=dtype, device=device)+nrn_so_params['init']
+
+        # Lobula
+        shape_emd = [x - 2 for x in shape_post_conv]
+        # On
+        syn_do_on_params = nn.ParameterDict({
+            'conductance': nn.Parameter(torch.tensor([[0, 0, 0], [0, self.params['conductanceDOOn'], 0], [0, 0, 0]],
+                                                     dtype=dtype, device=device), requires_grad=False),
+            'reversal': nn.Parameter(torch.tensor([[0, 0, 0], [0, self.params['reversalEx'], 0], [0, 0, 0]],
+                                                  dtype=dtype, device=device), requires_grad=False),
+        })
+        self.syn_direct_on_on = m.NonSpikingChemicalSynapseConv(1, 1, 3, conv_dim=2,
+                                                                params=syn_do_on_params, device=device, dtype=dtype)
+        # CCW
+        syn_eo_ccw_on_params = nn.ParameterDict({
+            'conductance': nn.Parameter(torch.tensor([[0, 0, 0], [self.params['conductanceEOOn'], 0, 0], [0, 0, 0]],
+                                                     dtype=dtype, device=device), requires_grad=False),
+            'reversal': nn.Parameter(torch.tensor([[0, 0, 0], [self.params['reversalMod'], 0, 0], [0, 0, 0]],
+                                                     dtype=dtype, device=device), requires_grad=False),
+        })
+        self.syn_enhance_on_ccw_on = m.NonSpikingChemicalSynapseConv(1, 1, 3, conv_dim=2,
+                                                                      params=syn_eo_ccw_on_params, device=device, dtype=dtype)
+        syn_so_ccw_on_params = nn.ParameterDict({
+            'conductance': nn.Parameter(torch.tensor([[0, 0, 0], [0, 0, self.params['conductanceSOOn']], [0, 0, 0]],
+                                                     dtype=dtype, device=device), requires_grad=False),
+            'reversal': nn.Parameter(torch.tensor([[0, 0, 0], [0, 0, self.params['reversalIn']], [0, 0, 0]],
+                                                     dtype=dtype, device=device), requires_grad=False),
+        })
+        self.syn_suppress_on_ccw_on = m.NonSpikingChemicalSynapseConv(1, 1, 3, conv_dim=2,
+                                                                      params=syn_so_ccw_on_params, device=device, dtype=dtype)
+        nrn_ccw_on_params = nn.ParameterDict({
+            'tau': nn.Parameter((tau_fast + torch.zeros(shape_emd, dtype=dtype, device=device)).to(device),
+                                requires_grad=False),
+            'leak': nn.Parameter(torch.ones(shape_emd, dtype=dtype).to(device), requires_grad=False),
+            'rest': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasOn'] + torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
+            'init': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
+        })
+        self.ccw_on = m.NonSpikingLayer(shape_emd, params=nrn_ccw_on_params, device=device, dtype=dtype)
+        self.state_ccw_on = torch.zeros(shape_emd, dtype=dtype, device=device)+nrn_ccw_on_params['init']
+        # CW
+        syn_eo_cw_on_params = nn.ParameterDict({
+            'conductance': nn.Parameter(torch.tensor([[0, 0, 0], [0, 0, self.params['conductanceEOOn']], [0, 0, 0]],
+                                                     dtype=dtype, device=device), requires_grad=False),
+            'reversal': nn.Parameter(torch.tensor([[0, 0, 0], [0, 0, self.params['reversalMod']], [0, 0, 0]],
+                                                  dtype=dtype, device=device), requires_grad=False),
+        })
+        self.syn_enhance_on_cw_on = m.NonSpikingChemicalSynapseConv(1, 1, 3, conv_dim=2,
+                                                                     params=syn_eo_cw_on_params, device=device, dtype=dtype)
+        syn_so_cw_on_params = nn.ParameterDict({
+            'conductance': nn.Parameter(torch.tensor([[0, 0, 0], [self.params['conductanceSOOn'], 0, 0], [0, 0, 0]],
+                                                     dtype=dtype, device=device), requires_grad=False),
+            'reversal': nn.Parameter(torch.tensor([[0, 0, 0], [self.params['reversalIn'], 0, 0], [0, 0, 0]],
+                                                  dtype=dtype, device=device), requires_grad=False),
+        })
+        self.syn_suppress_on_cw_on = m.NonSpikingChemicalSynapseConv(1, 1, 3, conv_dim=2,
+                                                                      params=syn_so_cw_on_params, device=device, dtype=dtype)
+        nrn_cw_on_params = nn.ParameterDict({
+            'tau': nn.Parameter((tau_fast + torch.zeros(shape_emd, dtype=dtype, device=device)).to(device),
+                                requires_grad=False),
+            'leak': nn.Parameter(torch.ones(shape_emd, dtype=dtype).to(device), requires_grad=False),
+            'rest': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(self.params['biasOn'] + torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
+            'init': nn.Parameter(torch.zeros(shape_emd, dtype=dtype).to(device), requires_grad=False),
+        })
+        self.cw_on = m.NonSpikingLayer(shape_emd, params=nrn_cw_on_params, device=device, dtype=dtype)
+        self.state_cw_on = torch.zeros(shape_emd, dtype=dtype, device=device)+nrn_cw_on_params['init']
+
+
+
+    def forward(self, x, reset: bool=False):#, states: List[torch.Tensor]):
+        if reset:
+            self.reset()
+
+        # Synaptic updates
+        # with profiler.record_function("EYE SYNAPTIC UPDATES"):
+        syn_input_bandpass_on = self.syn_input_bandpass_on(self.state_input, self.bandpass_on.state_input)
+        syn_input_lowpass = self.syn_input_lowpass(self.state_input, self.state_lowpass)
+        syn_lowpass_enhance_on = self.syn_lowpass_enhance_on(self.state_lowpass, self.state_enhance_on)
+        syn_bandpass_on_direct_on = self.syn_bandpass_on_direct_on(self.bandpass_on.state_output, self.state_direct_on)
+        syn_direct_on_suppress_on = self.syn_direct_on_suppress_on(self.state_direct_on, self.state_suppress_on)
+        syn_enhance_on_ccw_on = self.syn_enhance_on_ccw_on(self.state_enhance_on, self.state_ccw_on)
+        syn_direct_on_ccw_on = self.syn_direct_on_on(self.state_direct_on, self.state_ccw_on)
+        syn_suppress_on_ccw_on = self.syn_suppress_on_ccw_on(self.state_suppress_on, self.state_ccw_on)
+        syn_enhance_on_cw_on = self.syn_enhance_on_cw_on(self.state_enhance_on, self.state_cw_on)
+        syn_direct_on_cw_on = self.syn_direct_on_on(self.state_direct_on, self.state_cw_on)
+        syn_suppress_on_cw_on = self.syn_suppress_on_cw_on(self.state_suppress_on, self.state_cw_on)
+
+        # Neural updates
+        # print(x)
+        # print(state_input)
+        # with profiler.record_function("EYE NEURAL UPDATES"):
+        self.state_input = self.input(x.squeeze(), self.state_input)
+        _ = self.bandpass_on(syn_input_bandpass_on.squeeze(), reset=reset)
+        self.state_lowpass = self.lowpass(torch.squeeze(syn_input_lowpass), self.state_lowpass)
+        self.state_enhance_on = self.enhance_on(syn_lowpass_enhance_on, self.state_enhance_on)
+        self.state_direct_on = self.direct_on(syn_bandpass_on_direct_on, self.state_direct_on)
+        self.state_suppress_on = self.suppress_on(syn_direct_on_suppress_on, self.state_suppress_on)
+        self.state_ccw_on = self.ccw_on(torch.squeeze(syn_enhance_on_ccw_on+syn_direct_on_ccw_on+syn_suppress_on_ccw_on), self.state_ccw_on)
+        self.state_cw_on = self.cw_on(torch.squeeze(syn_enhance_on_cw_on+syn_direct_on_cw_on+syn_suppress_on_cw_on), self.state_cw_on)
+
+        # with profiler.record_function("EYE OUTPUT FORMAT"):
+
+
+        return self.state_ccw_on, self.state_cw_on
+
+    @jit.export
+    def reset(self):
+        self.state_input = self.input.params['init']
+        self.state_lowpass = self.lowpass.params['init']
+        self.state_enhance_on = self.enhance_on.params['init']
+        self.state_direct_on = self.direct_on.params['init']
+        self.state_suppress_on = self.suppress_on.params['init']
+        self.state_ccw_on = self.ccw_on.params['init']
+        self.state_cw_on = self.cw_on.params['init']
+
 class SNSMotionVisionEye(nn.Module):
     def __init__(self, dt, shape_input, shape_field, params=None, device=None, dtype=torch.float32, generator=None):
         super().__init__()
@@ -657,6 +949,126 @@ class SNSMotionVisionEye(nn.Module):
         self.state_cw_on = self.cw_on.params['init']
         self.state_ccw_off = self.ccw_off.params['init']
         self.state_cw_off = self.cw_off.params['init']
+
+class SNSMotionVisionOn(nn.Module):
+    def __init__(self, dt, shape_input, shape_field, params=None, device=None, dtype=torch.float32, generator=None):
+        super().__init__()
+        if device is None:
+            device = 'cpu'
+
+        self.params = nn.ParameterDict({
+            'reversalEx': nn.Parameter(torch.tensor([2.0], dtype=dtype).to(device)),
+            'reversalIn': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device)),
+            'reversalMod': nn.Parameter(torch.tensor([0.0], dtype=dtype).to(device)),
+            'freqFast': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'ampCenBO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdCenBO': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'ampSurBO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdSurBO': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqBOFast': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'freqBOSlow': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'ampCenLO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdCenLO': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'ampSurLO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'stdSurLO': nn.Parameter(1+99*torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqLO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'conductanceLOEO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqEO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasEO': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'conductanceBODO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqDO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasDO': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'conductanceDOSO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqSO': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasSO': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'conductanceEOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'conductanceDOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'conductanceSOOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device)),
+            'freqOn': nn.Parameter(torch.rand(1, dtype=dtype, generator=generator).to(device) * 1000),
+            'biasOn': nn.Parameter(2*torch.rand(1, dtype=dtype, generator=generator).to(device)-1),
+            'gainHorizontal': nn.Parameter(torch.tensor([1.0], dtype=dtype).to(device)),
+        })
+        if params is not None:
+            self.params.update(params)
+        self.dt = dt
+        self.device = device
+        self.dtype = dtype
+        self.eye = OnPathway(dt, shape_input, shape_field, params=self.params, device=device, dtype=dtype,
+                                      generator=None)
+        shape_post_conv = [x - (shape_field - 1) for x in shape_input]
+        shape_emd = [x - 2 for x in shape_post_conv]
+        flat_shape_emd = shape_emd[0]*shape_emd[1]
+        num_zero = 6*shape_emd[0]
+        if shape_emd[1] > 6:
+            flat_shape_emd_corrected = flat_shape_emd-num_zero
+        else:
+            flat_shape_emd_corrected = flat_shape_emd
+
+        g_ex_full = self.params['gainHorizontal']/(self.params['reversalEx']-self.params['gainHorizontal'])
+        g_in_full = (-self.params['gainHorizontal']*self.params['reversalEx'])/(self.params['reversalIn']*(self.params['reversalEx']-self.params['gainHorizontal']))
+        g_ex_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + g_ex_full/flat_shape_emd_corrected
+        g_in_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + g_in_full / flat_shape_emd_corrected
+        if shape_emd[1] > 6:
+            g_ex_tensor[(int(shape_emd[1]/2)-3):(int(shape_emd[1]/2)+3)] = 0.0
+            g_in_tensor[(int(shape_emd[1]/2)-3):(int(shape_emd[1]/2)+3)] = 0.0
+        reversal_ex_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + self.params['reversalEx']
+        reversal_in_tensor = torch.zeros(flat_shape_emd, dtype=dtype, device=device) + self.params['reversalIn']
+
+        # Horizontal Cells
+        syn_cw_ex_ccw_in_params = nn.ParameterDict({
+            'conductance': nn.Parameter(torch.vstack((g_ex_tensor,g_in_tensor)).to(device), requires_grad=False),
+            'reversal': nn.Parameter(torch.vstack((reversal_ex_tensor,reversal_in_tensor)).to(device),
+                                     requires_grad=False)
+        })
+        syn_cw_in_ccw_ex_params = nn.ParameterDict({
+            'conductance': nn.Parameter(torch.vstack((g_in_tensor, g_ex_tensor)).to(device), requires_grad=False),
+            'reversal': nn.Parameter(torch.vstack((reversal_in_tensor, reversal_ex_tensor)).to(device),
+                                     requires_grad=False)
+        })
+        self.syn_cw_ex_ccw_in = m.NonSpikingChemicalSynapseLinear(flat_shape_emd, 2,
+                                                                  params=syn_cw_ex_ccw_in_params, device=device,
+                                                                  dtype=dtype, generator=generator)
+        self.syn_cw_in_ccw_ex = m.NonSpikingChemicalSynapseLinear(flat_shape_emd, 2,
+                                                                  params=syn_cw_in_ccw_ex_params, device=device,
+                                                                  dtype=dtype, generator=generator)
+        tau_horizontal = dt / __calc_cap_from_cutoff__(self.params['freqFast'].data)
+        nrn_hc_params = nn.ParameterDict({
+            'tau': nn.Parameter((tau_horizontal.data + torch.zeros(2, dtype=dtype, device=device)).to(device),
+                                requires_grad=False),
+            'leak': nn.Parameter(torch.ones(2, dtype=dtype).to(device), requires_grad=False),
+            'rest': nn.Parameter(torch.zeros(2, dtype=dtype).to(device), requires_grad=False),
+            'bias': nn.Parameter(torch.zeros(2, dtype=dtype).to(device), requires_grad=False),
+            'init': nn.Parameter(torch.zeros(2, dtype=dtype).to(device), requires_grad=False)
+        })
+        self.horizontal = m.NonSpikingLayer(2, params=nrn_hc_params, device=device, dtype=dtype)
+        self.state_horizontal = torch.zeros(2, dtype=dtype, device=device)+nrn_hc_params['init']
+
+    def forward(self, x, reset: bool=False):#, states):
+        if reset:
+            self.reset()
+
+        # with profiler.record_function("MERGED SYNAPTIC UPDATES"):
+        syn_cw_on = self.syn_cw_ex_ccw_in(torch.flatten(self.eye.state_cw_on), self.state_horizontal)
+        syn_ccw_on = self.syn_cw_in_ccw_ex(torch.flatten(self.eye.state_ccw_on), self.state_horizontal)
+
+        # with profiler.record_function("EYE PROCESSING"):
+        _ = self.eye(x, reset=reset)
+
+        # with profiler.record_function("MERGED NEURAL UPDATE"):
+        self.state_horizontal = self.horizontal(syn_ccw_on+syn_cw_on, self.state_horizontal)
+
+        # with profiler.record_function("MERGED STATE OUTPUT"):
+        # states = [state_input, state_bp_on_input, state_bp_on_fast, state_bp_on_slow, state_bp_on_output,
+        #  state_lowpass, state_bp_off_input, state_bp_off_fast, state_bp_off_slow, state_bp_off_output,
+        #  state_enhance_on, state_direct_on, state_suppress_on, state_enhance_off, state_direct_off,
+        #  state_suppress_off, state_ccw_on, state_cw_on, state_ccw_off, state_cw_off, state_horizontal]
+
+        return self.state_horizontal
+
+    @jit.export
+    def reset(self):
+        self.state_horizontal = torch.zeros(2, dtype=self.dtype, device=self.device)
+
 
 class SNSMotionVisionMerged(nn.Module):
     def __init__(self, dt, shape_input, shape_field, params=None, device=None, dtype=torch.float32, generator=None):

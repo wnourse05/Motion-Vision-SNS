@@ -50,7 +50,7 @@ def process_args(args):
     now = datetime.now()
     params['dateTime'] = now.strftime('%Y-%m-%d_%H-%M-%S')
     params['dir'] = args.dir
-    params['debug'] = bool(args.debug)
+    params['debug'] = args.debug
     bounds = pd.read_csv(params['boundFile'])
     params['boundsLower'] = torch.as_tensor(bounds['Lower Bound'], dtype=params['dtype'])
     params['boundsUpper'] = torch.as_tensor(bounds['Upper Bound'], dtype=params['dtype'])
@@ -86,19 +86,19 @@ def run_net(solution, opt_params, data, state_labels, vel_labels):
     x = solution.values.clone().detach()
     x = torch.clamp(x, opt_params['boundsLower'], opt_params['boundsUpper'])
     with torch.no_grad():
-        if opt_params['debug']:
+        if opt_params['debug'] == 'True':
             print('Convert parameter vector')
         # Convert parameter vector to dictionary
         params = vec_to_dict(x, opt_params)
 
         # Build model
-        if opt_params['debug']:
+        if opt_params['debug'] == 'True':
             print('Building net')
         if opt_params['network'] == 'On':
             model = SNSMotionVisionOn(opt_params['dt'], [24, 64], opt_params['shapeField'],
                                       params=params, dtype=opt_params['dtype'], device='cpu')
         if opt_params['compile']:
-            if opt_params['debug']:
+            if opt_params['debug'] == 'True':
                 print('Compiling net')
             model = torch.jit.script(model)
             model.eval()
@@ -114,20 +114,20 @@ def run_net(solution, opt_params, data, state_labels, vel_labels):
         out_state = torch.zeros([num_steps, 2])
         error = torch.zeros(num_trials)
         prediction = torch.zeros(num_trials)
-        if opt_params['debug']:
+        if opt_params['debug'] == 'True':
             print('Start loop')
         for trial in range(num_trials):
             for frame in range(num_frames):
                 image = data[trial, frame, :, :]
                 for step in range(num_steps_inner):
-                    if opt_params['debug']:
+                    if opt_params['debug'] == 'True':
                         print('Trial ' + str(trial) + ' Frame ' + str(frame) + ' Step ' + str(
                             frame * num_steps_inner + step))
                     if frame == 0 and step == 0:
                         out_state[frame * num_steps_inner + step, :] = model(image, True)
                     else:
                         out_state[frame * num_steps_inner + step, :] = model(image, True)
-            if opt_params['debug']:
+            if opt_params['debug'] == 'True':
                 print('Trial error')
             avg_val = torch.mean(out_state[:, 0])
             error[trial] = mse_loss(avg_val, state_labels[trial])
@@ -138,7 +138,7 @@ def run_net(solution, opt_params, data, state_labels, vel_labels):
 
 class OptimizeMotionVision(Problem):
     def __init__(self, opt_params):
-        if opt_params['debug']:
+        if opt_params['debug'] == 'True':
             print('Initializing problem')
         super().__init__(objective_sense='min',
                          solution_length=len(opt_params['boundsLower']),
@@ -181,13 +181,13 @@ def get_solver(opt_params, problem):
     else:
         solver = alg.XNES(problem, stdev_init=opt_params['std'], popsize=opt_params['popSize'])
 
-    if opt_params['debug']:
+    if opt_params['debug'] == 'True':
         print('Solver created: '+opt_params['algorithm'])
     return solver
 
 def validate(solution, opt_params):
     # Load training data
-    if opt_params['debug']:
+    if opt_params['debug'] == 'True':
         print('Loading training data')
     if opt_params['batchValidate'] == 'full':
         num_val = len(opt_params['testData'])
@@ -201,13 +201,13 @@ def validate(solution, opt_params):
     return accuracy
 
 def main(opt_params):
-    if opt_params['debug']:
+    if opt_params['debug'] == 'True':
         print('Generate Problem')
     problem = OptimizeMotionVision(opt_params)
-    if opt_params['debug']:
+    if opt_params['debug'] == 'True':
         print('Generate Solver')
     solver = get_solver(opt_params, problem)
-    if opt_params['debug']:
+    if opt_params['debug'] == 'True':
         print('Generate Logger')
     logger = PandasLogger(solver)
     log_filename = opt_params['dir'] + 'log_' + opt_params['dateTime'] + '_' + opt_params['algorithm'] + '.p'

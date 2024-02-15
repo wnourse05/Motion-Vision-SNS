@@ -54,6 +54,7 @@ def process_args(args):
     bounds = pd.read_csv(params['boundFile'])
     params['boundsLower'] = torch.as_tensor(bounds['Lower Bound'], dtype=params['dtype'])
     params['boundsUpper'] = torch.as_tensor(bounds['Upper Bound'], dtype=params['dtype'])
+    params['centerInit'] = torch.as_tensor(bounds['Start'], dtype=params['dtype'])
     params['compile'] = bool(args.compile)
     params['max'] = 2.0*params['batchSize']#torch.finfo(params['dtype']).max
     if args.batch_validate == 'full':
@@ -170,16 +171,16 @@ class OptimizeMotionVision(Problem):
 def get_solver(opt_params, problem):
     if opt_params['algorithm'] == 'CES':
         solver = alg.CEM(problem, popsize=opt_params['popSize'], parenthood_ratio=opt_params['parenthoodRatio'],
-                         stdev_init=opt_params['std'])
+                         stdev_init=opt_params['std'], center_init=opt_params['centerInit'])
     elif opt_params['algorithm'] == 'CMA-ES':
-        solver = alg.CMAES(problem, stdev_init=opt_params['std'], popsize=opt_params['popSize'])
+        solver = alg.CMAES(problem, stdev_init=opt_params['std'], popsize=opt_params['popSize'], center_init=opt_params['centerInit'])
     elif opt_params['algorithm'] == 'PGPE':
         solver = alg.PGPE(problem, popsize=opt_params['popSize'], center_learning_rate=opt_params['lr'],
-                          stdev_learning_rate=opt_params['lr'], stdev_init=opt_params['std']),
+                          stdev_learning_rate=opt_params['lr'], stdev_init=opt_params['std'], center_init=opt_params['centerInit'])
     elif opt_params['algorithm'] == 'SNES':
-        solver = alg.SNES(problem, stdev_init=opt_params['std'], popsize=opt_params['popSize'])
+        solver = alg.SNES(problem, stdev_init=opt_params['std'], popsize=opt_params['popSize'], center_init=opt_params['centerInit'])
     else:
-        solver = alg.XNES(problem, stdev_init=opt_params['std'], popsize=opt_params['popSize'])
+        solver = alg.XNES(problem, stdev_init=opt_params['std'], popsize=opt_params['popSize'], center_init=opt_params['centerInit'])
 
     if opt_params['debug'] == 'True':
         print('Solver created: '+opt_params['algorithm'])

@@ -1003,6 +1003,10 @@ class SNSMotionVisionOn(nn.Module):
                                       generator=None)
         self.syn_cw_ex_ccw_in = m.NonSpikingChemicalSynapseLinear(flat_shape_emd, 2, device=self.device,
                                                                   dtype=self.dtype, generator=self.generator)
+        self.syn_cw_in_ccw_ex = m.NonSpikingChemicalSynapseLinear(flat_shape_emd, 2, device=self.device,
+                                                                  dtype=self.dtype, generator=self.generator)
+        self.horizontal = m.NonSpikingLayer(2, device=self.device, dtype=self.dtype)
+        self.state_horizontal = torch.zeros(2, dtype=self.dtype, device=self.device)
         self.setup()
 
     def forward(self, x, state_input, state_bo_input, state_bo_fast, state_bo_slow, state_bo_output, state_lowpass,
@@ -1076,9 +1080,7 @@ class SNSMotionVisionOn(nn.Module):
         })
         self.syn_cw_ex_ccw_in.params.update(syn_cw_ex_ccw_in_params)
 
-        self.syn_cw_in_ccw_ex = m.NonSpikingChemicalSynapseLinear(flat_shape_emd, 2,
-                                                                  params=syn_cw_in_ccw_ex_params, device=self.device,
-                                                                  dtype=self.dtype, generator=self.generator)
+        self.syn_cw_in_ccw_ex.params.update(syn_cw_in_ccw_ex_params)
         tau_horizontal = self.dt / __calc_cap_from_cutoff__(self.params['freqFast'].data)
         nrn_hc_params = nn.ParameterDict({
             'tau': nn.Parameter((tau_horizontal.data + torch.zeros(2, dtype=self.dtype, device=self.device)).to(self.device),
@@ -1088,8 +1090,7 @@ class SNSMotionVisionOn(nn.Module):
             'bias': nn.Parameter(torch.zeros(2, dtype=self.dtype).to(self.device), requires_grad=False),
             'init': nn.Parameter(torch.zeros(2, dtype=self.dtype).to(self.device), requires_grad=False)
         })
-        self.horizontal = m.NonSpikingLayer(2, params=nrn_hc_params, device=self.device, dtype=self.dtype)
-        self.state_horizontal = torch.zeros(2, dtype=self.dtype, device=self.device) + nrn_hc_params['init']
+        self.horizontal.params.update(nrn_hc_params)
 
 class SNSMotionVisionMerged(nn.Module):
     def __init__(self, dt, shape_input, shape_field, params=None, device=None, dtype=torch.float32, generator=None):

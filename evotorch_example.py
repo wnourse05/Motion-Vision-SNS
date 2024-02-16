@@ -10,7 +10,7 @@ from evotorch.decorators import vectorized
 
 @vectorized
 def sphere(x: torch.Tensor) -> torch.Tensor:
-    return torch.sum(x.pow(2.0), dim=-1)
+    return torch.sum(x.pow(2.0), dim=-1) + torch.rand(1)*0.01
 
 @vectorized
 def rastrigin(x: torch.Tensor) -> torch.Tensor:
@@ -23,20 +23,20 @@ def styblinski(x: torch.Tensor) -> torch.Tensor:
 
 num_generations = 1000
 dimension = 26
-popsize = 100
+popsize = 14
 stdev_init = 5
 lr = 0.01
 tolerance = 1e-3
 num_actors = 'max'
 # Format as Problem for evotorch
-problems = [Problem("min", sphere, solution_length=dimension, initial_bounds=(-1,1), num_actors=num_actors),
-            Problem("min", rastrigin, solution_length=dimension, initial_bounds=(-5.12,5.12), num_actors=num_actors),
-            Problem("min", styblinski, solution_length=dimension, initial_bounds=(-5,5), num_actors=num_actors)]
+problems = [Problem("min", sphere, solution_length=dimension, initial_bounds=(-1,1), num_actors=num_actors)]#,
+            # Problem("min", rastrigin, solution_length=dimension, initial_bounds=(-5.12,5.12), num_actors=num_actors),
+            # Problem("min", styblinski, solution_length=dimension, initial_bounds=(-5,5), num_actors=num_actors)]
 functions = ['Sphere', 'Rastrigin', 'Syblinski-Tang']
 
 answers = [0.0, 0.0, -39.1662*dimension]
 plt.figure()
-for k in range(len(functions)):
+for k in range(len(problems)):
     problem = problems[k]
     func = functions[k]
     # Algorithm

@@ -31,6 +31,7 @@ class ClipDataset(Dataset):
         # print(file_path)
         frames = torch.as_tensor(pickle.load(open(os.path.join(self.root_dir, file_path), 'rb')), dtype=self.dtype,
                                  device=self.device)
+        frames = frames/255
 
         label = float(class_name)
         return frames, label

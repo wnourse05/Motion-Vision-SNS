@@ -9,7 +9,7 @@ import argparse
 from motion_vision_net import SNSMotionVisionOn
 from motion_data import ClipDataset
 from datetime import datetime
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 
 def process_args(args):
@@ -72,7 +72,7 @@ def run_sample(sample, net: nn.Module):
     step = 0
     for i in range(sample.shape[0]):
         for j in range(num_sub_steps):
-            print(torch.max(sample))
+            # print(torch.max(sample))
 
             # print('Sample %i Step %i'%(i,step))
             (state_input, state_bo_input, state_bo_fast, state_bo_slow, state_bo_output, state_lowpass, state_enhance_on,
@@ -90,32 +90,36 @@ def run_sample(sample, net: nn.Module):
                                                                                                          state_ccw_on,
                                                                                                          state_horizontal,
                                                                                                          avg, niter)
-            print('Input')
-            print(state_input)
-            print('BO Input')
-            print(state_bo_input)
-            print('BO Fast')
-            print(state_bo_fast)
-            print('BO Slow')
-            print(state_bo_slow)
-            print('BO Out')
-            print(state_bo_output)
-            print('LO')
-            print(state_lowpass)
-            print('EO')
-            print(state_enhance_on)
-            print('DO')
-            print(state_direct_on)
-            print('SO')
-            print(state_suppress_on)
-            print('CW')
-            print(state_cw_on)
-            print('CCW')
-            print(state_ccw_on)
-            print('Horizontal')
-            print(state_horizontal)
-            print('Avg')
-            print(avg)
+
+
+            # print('Avg')
+            # print(avg)
+            if torch.any(torch.isnan(avg)).item():
+                print('Input')
+                print(state_input)
+                print('BO Input')
+                print(state_bo_input)
+                print('BO Fast')
+                print(state_bo_fast)
+                print('BO Slow')
+                print(state_bo_slow)
+                print('BO Out')
+                print(state_bo_output)
+                print('LO')
+                print(state_lowpass)
+                print('EO')
+                print(state_enhance_on)
+                print('DO')
+                print(state_direct_on)
+                print('SO')
+                print(state_suppress_on)
+                print('CW')
+                print(state_cw_on)
+                print('CCW')
+                print(state_ccw_on)
+                print('Horizontal')
+                print(state_horizontal)
+
             step += 1
 
     return avg, net
@@ -159,10 +163,10 @@ def run_epoch(index, net, loss_fn, optimizer, training_loader, testing_loader, p
     :return: The raw losses
     """
     loss_history = torch.zeros(len(training_loader))
-    for i, data in enumerate(training_loader):
+    for i, (frames, target) in enumerate(training_loader):
         # print(i)
         # Get data
-        frames, target = data
+        frames, target = frames.to(params['device']), target.to(params['device'])
         frames = torch.squeeze(frames)
         target = vel_to_state(target)
         target = torch.as_tensor(target, dtype=params['dtype'])
@@ -273,7 +277,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_interval', nargs='?', default='1')
     parser.add_argument('--compile', nargs='?', default='True')
     parser.add_argument('--network', nargs='?', default='On', choices=['On'])
-    parser.add_argument('--device', nargs='?', default='cpu', choices=['cuda', 'cpu'])
+    parser.add_argument('--device', nargs='?', default='cuda', choices=['cuda', 'cpu'])
     args = parser.parse_args()
 
     main(args)

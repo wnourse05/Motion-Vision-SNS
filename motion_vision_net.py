@@ -1,5 +1,4 @@
-# from snstorch import modules as m
-import modules as m
+from snstorch import modules as m
 import torch
 import torch.nn as nn
 import numpy as np
@@ -351,6 +350,7 @@ class OnPathway(nn.Module):
             'reversal': nn.Parameter(reversal, requires_grad=False)
         })
         self.syn_input_bandpass_on.params.update(syn_in_bo_params)
+        self.syn_input_bandpass_on.setup()
         tau_bo_fast = self.dt / __calc_cap_from_cutoff__(self.params['freqBOFast'].data)
         tau_bo_slow = self.dt / __calc_cap_from_cutoff__(self.params['freqBOSlow'].data)
         nrn_bo_params = nn.ParameterDict({
@@ -395,6 +395,7 @@ class OnPathway(nn.Module):
             'reversal': nn.Parameter(reversal, requires_grad=False)
         })
         self.syn_input_lowpass.params.update(syn_in_l_params)
+        self.syn_input_lowpass.setup()
         tau_l = self.dt / __calc_cap_from_cutoff__(self.params['freqLO'].data)
         nrn_l_params = nn.ParameterDict({
             'tau': nn.Parameter((tau_l + torch.zeros(self.shape_post_conv, dtype=self.dtype, device=self.device)).to(self.device),
@@ -470,6 +471,7 @@ class OnPathway(nn.Module):
                                                   dtype=self.dtype, device=self.device), requires_grad=False),
         })
         self.syn_direct_on_on.params.update(syn_do_on_params)
+        self.syn_direct_on_on.setup()
         # CCW Output Neuron
         syn_eo_ccw_on_params = nn.ParameterDict({
             'conductance': nn.Parameter(torch.tensor([[0, 0, 0], [self.params['conductanceEOOn'], 0, 0], [0, 0, 0]],
@@ -478,6 +480,7 @@ class OnPathway(nn.Module):
                                                   dtype=self.dtype, device=self.device), requires_grad=False),
         })
         self.syn_enhance_on_ccw_on.params.update(syn_eo_ccw_on_params)
+        self.syn_enhance_on_ccw_on.setup()
         syn_so_ccw_on_params = nn.ParameterDict({
             'conductance': nn.Parameter(torch.tensor([[0, 0, 0], [0, 0, self.params['conductanceSOOn']], [0, 0, 0]],
                                                      dtype=self.dtype, device=self.device), requires_grad=False),
@@ -485,6 +488,7 @@ class OnPathway(nn.Module):
                                                   dtype=self.dtype, device=self.device), requires_grad=False),
         })
         self.syn_suppress_on_ccw_on.params.update(syn_so_ccw_on_params)
+        self.syn_suppress_on_ccw_on.setup()
         nrn_ccw_on_params = nn.ParameterDict({
             'tau': nn.Parameter((self.tau_fast + torch.zeros(self.shape_emd, dtype=self.dtype, device=self.device)).to(self.device),
                                 requires_grad=False),
@@ -504,6 +508,7 @@ class OnPathway(nn.Module):
                                                   dtype=self.dtype, device=self.device), requires_grad=False),
         })
         self.syn_enhance_on_cw_on.params.update(syn_eo_cw_on_params)
+        self.syn_enhance_on_cw_on.setup()
         syn_so_cw_on_params = nn.ParameterDict({
             'conductance': nn.Parameter(torch.tensor([[0, 0, 0], [self.params['conductanceSOOn'], 0, 0], [0, 0, 0]],
                                                      dtype=self.dtype, device=self.device), requires_grad=False),
@@ -511,6 +516,7 @@ class OnPathway(nn.Module):
                                                   dtype=self.dtype, device=self.device), requires_grad=False),
         })
         self.syn_suppress_on_cw_on.params.update(syn_so_cw_on_params)
+        self.syn_suppress_on_cw_on.setup()
         nrn_cw_on_params = nn.ParameterDict({
             'tau': nn.Parameter((self.tau_fast + torch.zeros(self.shape_emd, dtype=self.dtype, device=self.device)).to(self.device),
                                 requires_grad=False),

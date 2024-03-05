@@ -15,15 +15,18 @@ def __calc_2d_field__(amp_cen, amp_sur, std_cen, std_sur, shape_field, reversal_
     axis = np.arange(-(5*(shape_field-1)/2), 5*((shape_field-1)/2+1), 5)
     conductance = torch.zeros([shape_field, shape_field])
     reversal = torch.zeros([shape_field, shape_field])
+    target = torch.zeros([shape_field, shape_field])
     for i in range(5):
         for j in range(5):
-            target = -1 * (amp_cen * torch.exp(-(axis[i] ** 2 + axis[j] ** 2) / (2 * std_cen)) - amp_sur * torch.exp(
+            target[i,j] = -1 * (amp_cen * torch.exp(-(axis[i] ** 2 + axis[j] ** 2) / (2 * std_cen)) - amp_sur * torch.exp(
                 -(axis[i] ** 2 + axis[j] ** 2) / (2 * std_sur)))
-            if target >= 0:
+
+            if target[i,j] >= 0:
                 reversal[i,j] = reversal_ex
             else:
                 reversal[i,j] = reversal_in
-            conductance[i,j] = torch.clamp(target/(reversal[i,j]-target),0)
+    target = target / (torch.abs(torch.sum(target)))
+    conductance = torch.clamp(target/(reversal-target),0)
     return conductance, reversal
 
 
@@ -291,6 +294,9 @@ class OnPathway(nn.Module):
         # with profiler.record_function("EYE SYNAPTIC UPDATES"):
         syn_input_bandpass_on = self.syn_input_bandpass_on(state_input, state_bo_input)
         syn_input_lowpass = self.syn_input_lowpass(state_input, state_lowpass)
+        # print('Synapses')
+        # print(torch.max(syn_input_bandpass_on))
+        # print(torch.max(syn_input_lowpass))
         syn_lowpass_enhance_on = self.syn_lowpass_enhance_on(state_lowpass, state_enhance_on)
         syn_bandpass_on_direct_on = self.syn_bandpass_on_direct_on(state_bo_output, state_direct_on)
         syn_direct_on_suppress_on = self.syn_direct_on_suppress_on(state_direct_on, state_suppress_on)

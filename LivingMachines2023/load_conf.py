@@ -35,7 +35,7 @@ def load_sampler_config(toml_file_path: Path) -> Tuple[int, int]:
     with open(toml_file_path, 'rb') as toml_file:
         toml_dict = tomli.load(toml_file)
 
-    return toml_dict['model']['chains'], toml_dict['model']['iterations'], toml_dict['model']['dim_full'], toml_dict['model']['params_to_use']#, toml_dict['model']['num_steps']
+    return toml_dict['model_toolbox']['chains'], toml_dict['model_toolbox']['iterations'], toml_dict['model_toolbox']['dim_full'], toml_dict['model_toolbox']['params_to_use']#, toml_dict['model_toolbox']['num_steps']
 
 
 if __name__ == '__main__':

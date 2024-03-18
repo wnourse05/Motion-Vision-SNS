@@ -69,7 +69,7 @@ def test_emd(dt, model, net, stim, interval):
             j = 0
     # else:
     #     for i in range(len(t)):
-    #         data_sns_toolbox[i, :] = model(stim[i, :])
+    #         data_sns_toolbox[i, :] = model_toolbox(stim[i, :])
 
     # data_sns_toolbox = data_sns_toolbox.to('cpu')
     data = data.transpose()
@@ -233,7 +233,7 @@ def save_estimated_data(result_sampler: pypesto.Result) -> None:
 
 def run_t4_estimation(vels, num_intervals, stim, goal) -> pypesto.Result:
     """
-    starts the simulation for the rat hindlimb model
+    starts the simulation for the rat hindlimb model_toolbox
 
     :param num_chains: number of chains
     :param n_iterations: number of iterations

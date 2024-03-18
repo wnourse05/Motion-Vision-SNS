@@ -92,7 +92,7 @@ def run_net(solution, opt_params, data, state_labels, vel_labels):
         # Convert parameter vector to dictionary
         params = vec_to_dict(x, opt_params)
 
-        # Build model
+        # Build model_toolbox
         if opt_params['debug'] == 'True':
             print('Building net')
         if opt_params['network'] == 'On':

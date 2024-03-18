@@ -950,9 +950,9 @@ def gen_motion_vision_no_output(params, shape, backend, device, center=False, sc
 #     EXPORT
 #     """
 #     # render(net, view=True)
-#     model = net.compile(dt, backend='numpy')
+#     model_toolbox = net.compile(dt, backend='numpy')
 #
-#     return model, net
+#     return model_toolbox, net
 #
 # def gen_single_emd_off(dt, params):
 #     """
@@ -1107,6 +1107,6 @@ def gen_motion_vision_no_output(params, shape, backend, device, center=False, sc
 #     EXPORT
 #     """
 #     # render(net, view=True)
-#     model = net.compile(dt, backend='numpy')
+#     model_toolbox = net.compile(dt, backend='numpy')
 #
-#     return model, net
+#     return model_toolbox, net

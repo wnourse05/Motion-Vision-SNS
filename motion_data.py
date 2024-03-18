@@ -2,6 +2,7 @@ import os
 import torch
 from torch.utils.data import Dataset, DataLoader
 import pickle
+import matplotlib.pyplot as plt
 
 class ClipDataset(Dataset):
     def __init__(self, root_dir, dtype=torch.float32, device='cpu'):
@@ -36,6 +37,36 @@ class ClipDataset(Dataset):
         label = float(class_name)
         return frames, label
 
+def grating(interval):
+    row_0 = torch.tensor([0,0,0,0,0,0,0])
+    row_1 = torch.tensor([1,0,0,0,0,0,0])
+    row_2 = torch.tensor([1,1,0,0,0,0,0])
+    row_3 = torch.tensor([1,1,1,0,0,0,0])
+    row_4 = torch.tensor([1,1,1,1,0,0,0])
+    row_5 = torch.tensor([1,1,1,1,1,0,0])
+    row_6 = torch.tensor([1,1,1,1,1,1,0])
+    row_7 = torch.tensor([1,1,1,1,1,1,1])
+    row_8 = torch.tensor([0,1,1,1,1,1,1])
+    row_9 = torch.tensor([0,0,1,1,1,1,1])
+    row_10 = torch.tensor([0,0,0,1,1,1,1])
+    row_11 = torch.tensor([0,0,0,0,1,1,1])
+    row_12 = torch.tensor([0,0,0,0,0,1,1])
+    row_13 = torch.tensor([0,0,0,0,0,0,1])
+
+    rows = [row_0, row_1, row_2, row_3, row_4, row_5, row_6, row_7, row_8, row_9, row_10, row_11, row_12, row_13]
+    num_frames = 14*(interval)
+    frames = torch.zeros([num_frames,5,7])
+    index = 0
+    for i in range(len(rows)):
+        frame = torch.vstack([rows[i], rows[i], rows[i], rows[i], rows[i]])
+        for _ in range(interval):
+            frames[index,:,:] = frame
+            index += 1
+    return frames
+
+# def grating_set():
+
+
 if __name__ == '__main__':
     train = ClipDataset('FlyWheelTrain')
     test = ClipDataset('FlyWheelTest')
@@ -51,3 +82,14 @@ if __name__ == '__main__':
     print(imgs.shape, labels)
     img = imgs[0,0,:,:]
     print(img.shape)
+
+    interval = 9
+    frames = grating(interval)
+    print(frames.shape)
+    plt.figure()
+    for i in range(14):
+        plt.subplot(2,7,i+1)
+        plt.imshow(frames[i,:,:])
+        plt.clim(0,1)
+
+    plt.show()

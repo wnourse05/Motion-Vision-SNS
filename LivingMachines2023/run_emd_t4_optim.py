@@ -140,7 +140,7 @@ def save_estimated_data(result_sampler: pypesto.Result) -> None:
 
 def run_t4_estimation(dt, freqs, stims, device) -> pypesto.Result:
     """
-    starts the simulation for the rat hindlimb model
+    starts the simulation for the rat hindlimb model_toolbox
 
     :param num_chains: number of chains
     :param n_iterations: number of iterations

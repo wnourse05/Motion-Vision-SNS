@@ -151,8 +151,8 @@ def tune_neuron(data, index, res=5, min_angle=-20, max_angle=20, plot=True, dt=0
     # Tune the neural parameters
     print('Neuron')
     if data['tau_hp'][index] is None:
-        # model = construct_lowpass(5, 0, t[1]-t[0])
-        # out = run_net(t, model, R)
+        # model_toolbox = construct_lowpass(5, 0, t[1]-t[0])
+        # out = run_net(t, model_toolbox, R)
         bounds = ([0.0, 0.0], [np.inf, 1.0])
         f = lambda x_vec, c, rest: test_lowpass(x_vec, c, rest, data['polarity'][index])
     else:

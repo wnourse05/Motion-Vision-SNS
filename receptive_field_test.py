@@ -12,6 +12,9 @@ class ConvTest(nn.Module):
         self.tau_fast = self.dt / (10 * self.dt)
 
         conductance, reversal, target = __calc_2d_field__(amp_rel, std_cen,std_sur, shape_field, reversal_ex, reversal_in)
+        print(torch.sum(conductance*reversal))
+        print(torch.sum(conductance))
+        print(torch.sum(target))
         syn_in_bo_params = nn.ParameterDict({
             'conductance': nn.Parameter(conductance, requires_grad=False),
             'reversal': nn.Parameter(reversal, requires_grad=False)
@@ -36,17 +39,18 @@ class ConvTest(nn.Module):
 
 dt = 1/(30*13)*1000
 num_steps = 100
-net = ConvTest(dt, 0.2, 2.5,6.4, 5, 5, -2)
+shape_field = 5
+net = ConvTest(dt, 0.0, 1,17.5, shape_field, 5, -2)
 
 state_input = torch.ones([1])
-x = torch.ones([5,5])
+x = torch.ones([shape_field,shape_field])
 data = torch.zeros([2,num_steps])
 
 for i in range(num_steps):
     state_input = net(x, state_input)
     data[0,i] = state_input
 
-print(torch.sum(net.target))
+# print(torch.sum(net.target))
 plt.figure()
 plt.suptitle('Receptive Field')
 plt.subplot(1,3,1)

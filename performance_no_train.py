@@ -58,7 +58,7 @@ def run_sample(sample, net: nn.Module):
     return cw_mean, ccw_mean
 
 params = {'dt': 1/(30*13)*1000, 'device': 'cuda'}
-data_test = ClipDataset('FlyWheelTest3s')
+data_test = ClipDataset('FlyWheelTrain3s')
 loader_testing = DataLoader(data_test, shuffle=False)
 
 
@@ -85,4 +85,4 @@ with torch.no_grad():
         targets[i] = target
 
 data = {'cw': data_cw.to('cpu'), 'ccw': data_ccw.to('cpu'), 'targets': targets}
-pickle.dump(data, open('field_test_no_train_mean.p', 'wb'))
+pickle.dump(data, open('field_train_no_train_mean.p', 'wb'))

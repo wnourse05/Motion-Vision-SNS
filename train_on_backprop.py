@@ -118,7 +118,7 @@ def run_sample(sample, net: nn.Module):
             # print(torch.min(state_ccw_on).item(), torch.max(state_ccw_on).item())
             # print('Horizontal')
             # print(state_horizontal)
-            if torch.any(torch.isnan(avg)).item():
+            if torch.any(torch.isnan(state_lowpass)).item() or torch.any(torch.isnan(state_bo_input)).item() or torch.any(torch.isnan(avg)).item():
                 print('Avg')
                 print(avg)
                 print('Input')
@@ -145,13 +145,14 @@ def run_sample(sample, net: nn.Module):
                 print(torch.min(state_ccw_on).item(), torch.max(state_ccw_on).item())
                 print('Horizontal')
                 print(state_horizontal)
+                quit()
 
             step += 1
 
     return avg, net
 
 
-def validate(net, loss_fn, testing_loader):
+def validate(net, loss_fn, testing_loader, params):
     """
     Iterate over the testing set and measure the performance
     :param net: Network to evaluate
@@ -161,9 +162,12 @@ def validate(net, loss_fn, testing_loader):
     """
     with torch.no_grad():
         loss_history = torch.zeros(len(testing_loader))
-        for i, data in enumerate(testing_loader):
+        for i, (frames, target) in enumerate(testing_loader):
+            # if i == 200:
+            #     break
             # Get data
-            frames, target = data
+            frames, target = frames.to(params['device']), target.to(params['device'])
+            frames = torch.squeeze(frames)
             target = vel_to_state(target)
 
             # Simulate the network
@@ -191,6 +195,8 @@ def run_epoch(index, net, loss_fn, optimizer, training_loader, testing_loader, p
     start = time.time()
     loss_history = torch.zeros(len(training_loader))
     for i, (frames, target) in enumerate(training_loader):
+        # if i == 190:
+        #     break
         # print(i)
         # Get data
         frames, target = frames.to(params['device']), target.to(params['device'])
@@ -214,14 +220,14 @@ def run_epoch(index, net, loss_fn, optimizer, training_loader, testing_loader, p
             print('Epoch: %i Sample %i/%i Epoch Time: %.4f Loss: %.4f'%(index, i+1, len(training_loader), time.time()-start, loss.item()))
         loss_history[i] = loss.item()
     epoch_mean_loss = torch.mean(loss_history)
-    test_loss = validate(net, loss_fn, testing_loader)
+    test_loss = validate(net, loss_fn, testing_loader, params)
     print('Epoch: %i Mean Loss: %.4f'%(index, epoch_mean_loss.item()))
     print('Validation Loss: %.4f'%test_loss.item())
 
     torch.save({'epoch': index,
                 'netStateDict': net.state_dict(),
                 'optimizerStateDict': optimizer.state_dict(),
-                }, 'checkpoints')
+                }, 'checkpoints/model.pt')
     return loss_history, epoch_mean_loss, test_loss, net, optimizer
 
 
@@ -257,6 +263,8 @@ def train(params):
             loss_history = torch.cat((loss_history, epoch_loss))
         epoch_loss_history[i] = epoch_mean_loss
         test_loss_history[i] = test_loss
+        if i > 0 and test_loss > test_loss_history[i-1]:
+            break
 
         filename = 'checkpoints/' + t + '_' + str(i) + '.pt'
         torch.save({'epoch': i,
@@ -298,7 +306,7 @@ if __name__ == '__main__':
     parser.add_argument('--dt', nargs='?', default='2.56')
     parser.add_argument('--dtype', nargs='?', choices=['float64', 'float32', 'float16'], default='float32')
     parser.add_argument('--bound_file', nargs='?', default='bounds_on_20240215.csv')
-    parser.add_argument('--num_epochs', nargs='?', default='100')
+    parser.add_argument('--num_epochs', nargs='?', default='10')
     parser.add_argument('--lr', nargs='?', default='0.001')
     parser.add_argument('--shape_field', nargs='?', default='5')
     parser.add_argument('--log_interval', nargs='?', default='1')

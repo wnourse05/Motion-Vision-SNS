@@ -1,4 +1,4 @@
-from motion_vision_net import VisionNetNoField
+from motion_vision_net import VisionNetNoField, VisionNet
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -58,11 +58,12 @@ def run_sample(sample, net: nn.Module):
     return cw_mean, ccw_mean
 
 params = {'dt': 1/(30*13)*1000, 'device': 'cuda'}
-data_test = ClipDataset('FlyWheelTrain3s')
+data_test = ClipDataset('FlyWheelTest3s')
 loader_testing = DataLoader(data_test, shuffle=False)
 
 
 net = VisionNetNoField(params['dt'], [24, 64], device=params['device'])
+net = VisionNet(params['dt'], [24,64], 5, device=params['device'])
 
 data_cw = torch.zeros([len(loader_testing)], device=params['device'])
 data_ccw = torch.zeros([len(loader_testing)], device=params['device'])
@@ -84,4 +85,4 @@ with torch.no_grad():
         targets[i] = target
 
 data = {'cw': data_cw.to('cpu'), 'ccw': data_ccw.to('cpu'), 'targets': targets}
-pickle.dump(data, open('train_no_train_mean.p', 'wb'))
+pickle.dump(data, open('field_test_no_train_mean.p', 'wb'))

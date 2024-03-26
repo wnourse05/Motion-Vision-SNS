@@ -1,4 +1,4 @@
-from motion_vision_net import VisionNetNoField
+from motion_vision_net import VisionNetNoField, VisionNet
 import matplotlib.pyplot as plt
 import time
 import torch
@@ -27,7 +27,7 @@ def run_sample(sample, net: nn.Module):
     niter = num_sub_steps*(sample.shape[0])+warmup
     step = 0
 
-    inp = torch.zeros([state_direct_on.shape[0]*state_direct_on.shape[1],niter])
+    inp = torch.zeros([state_input.shape[0]*state_input.shape[1],niter])
     bo_input = torch.zeros([state_direct_on.shape[0] * state_direct_on.shape[1], niter])
     bo_fast = torch.zeros([state_direct_on.shape[0] * state_direct_on.shape[1], niter])
     bo_slow = torch.zeros([state_direct_on.shape[0] * state_direct_on.shape[1], niter])
@@ -114,6 +114,7 @@ loader_testing = DataLoader(data_test, shuffle=True)
 loss_fn = nn.MSELoss()
 
 net = VisionNetNoField(params['dt'], [24, 64], device=params['device'])
+net = VisionNet(params['dt'], [24,64], 5, device=params['device'])
 if plot:
     # plt.figure(1)
     # plt.suptitle('Input')

@@ -83,5 +83,5 @@ with torch.no_grad():
         data_ccw[i] = ccw_mean
         targets[i] = target
 
-data = {'cw': data_cw.to('cpu'), 'ccw': data_ccw.to('cpu')}
+data = {'cw': data_cw.to('cpu'), 'ccw': data_ccw.to('cpu'), 'targets': targets}
 pickle.dump(data, open('train_no_train_mean.p', 'wb'))

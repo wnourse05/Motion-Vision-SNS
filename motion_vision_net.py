@@ -954,42 +954,36 @@ class VisionNet(nn.Module):
         self.tau_fast = self.dt/(6*self.dt)
 
         self.params = nn.ParameterDict({
-            'reversalEx': nn.Parameter(torch.tensor([5.0], dtype=dtype).to(device)),
-            'reversalIn': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device)),
-            'reversalMod': nn.Parameter(torch.tensor([0.0], dtype=dtype).to(device)),
-            'tauFast': nn.Parameter(torch.tensor([self.tau_fast], dtype=dtype).to(device)),
+            'reversalEx': nn.Parameter(torch.tensor([5.0], dtype=dtype).to(device), requires_grad=False),
+            'reversalIn': nn.Parameter(torch.tensor([-2.0], dtype=dtype).to(device), requires_grad=False),
+            'reversalMod': nn.Parameter(torch.tensor([0.0], dtype=dtype).to(device), requires_grad=False),
             'stdCenBO': nn.Parameter(torch.tensor([2.7], dtype=dtype).to(device)),
             'ampRelBO': nn.Parameter(torch.tensor([0.012], dtype=dtype).to(device)),
             'stdSurBO': nn.Parameter(torch.tensor([17.5], dtype=dtype).to(device)),
-            'tauBOFast': nn.Parameter(torch.tensor([self.tau_fast], dtype=dtype).to(device)),
-            'tauBOSlow': nn.Parameter(torch.tensor([self.dt/(1000*5*torch.pi/180)], dtype=dtype).to(device)),
+            'ratioTauBO': nn.Parameter(torch.tensor([0.176], dtype=dtype).to(device)),
             'stdCenL': nn.Parameter(torch.tensor([2.5], dtype=dtype).to(device)),
             'ampRelL': nn.Parameter(torch.tensor([0.2], dtype=dtype).to(device)),
             'stdSurL': nn.Parameter(torch.tensor([6.4], dtype=dtype).to(device)),
-            'tauL': nn.Parameter(torch.tensor([self.tau_fast], dtype=dtype).to(device)),
             'stdCenBF': nn.Parameter(torch.tensor([2.9], dtype=dtype).to(device)),
             'ampRelBF': nn.Parameter(torch.tensor([0.013], dtype=dtype).to(device)),
             'stdSurBF': nn.Parameter(torch.tensor([12.4], dtype=dtype).to(device)),
-            'tauBFFast': nn.Parameter(torch.tensor([self.tau_fast], dtype=dtype).to(device)),
-            'tauBFSlow': nn.Parameter(torch.tensor([self.dt / (1000 * 5 * torch.pi / 180)], dtype=dtype).to(device)),
+            'ratioTauBF': nn.Parameter(torch.tensor([0.176], dtype=dtype).to(device)),
             'conductanceLEO': nn.Parameter(torch.tensor([1/(5-1)], dtype=dtype).to(device)),
-            'tauEO': nn.Parameter(torch.tensor([self.dt/(5/(5*0.05*180/torch.pi)*1000)], dtype=dtype).to(device)),
+            'ratioTauEO': nn.Parameter(torch.tensor([0.044], dtype=dtype).to(device)),
             'conductanceBODO': nn.Parameter(torch.tensor([1/(2.0)], dtype=dtype).to(device)),
-            'tauDO': nn.Parameter(torch.tensor([self.tau_fast], dtype=dtype).to(device)),
+            'ratioTauDO': nn.Parameter(torch.tensor([1.0], dtype=dtype).to(device)),
             'conductanceDOSO': nn.Parameter(torch.tensor([1/(5-1)], dtype=dtype).to(device)),
-            'tauSO': nn.Parameter(torch.tensor([self.tau_fast], dtype=dtype).to(device)),
+            'ratioTauSO': nn.Parameter(torch.tensor([1.0], dtype=dtype).to(device)),
             'conductanceLEF': nn.Parameter(torch.tensor([1 / (5 - 1)], dtype=dtype).to(device)),
-            'tauEF': nn.Parameter(
-                torch.tensor([self.dt / (5 / (5 * 0.05 * 180 / torch.pi) * 1000)], dtype=dtype).to(device)),
+            'ratioTauEF': nn.Parameter(torch.tensor([0.044], dtype=dtype).to(device)),
             'conductanceBFDF': nn.Parameter(torch.tensor([1 / (2.0)], dtype=dtype).to(device)),
-            'tauDF': nn.Parameter(torch.tensor([self.tau_fast], dtype=dtype).to(device)),
+            'ratioTauDF': nn.Parameter(torch.tensor([1.0], dtype=dtype).to(device)),
             'conductanceDFSF': nn.Parameter(torch.tensor([1 / (5 - 1)], dtype=dtype).to(device)),
-            'tauSF': nn.Parameter(torch.tensor([self.tau_fast], dtype=dtype).to(device)),
+            'ratioTauSF': nn.Parameter(torch.tensor([1.0], dtype=dtype).to(device)),
             'conductanceEOOn': nn.Parameter(torch.tensor([9], dtype=dtype).to(device)),
             'conductanceDOOn': nn.Parameter(torch.tensor([1/2], dtype=dtype).to(device)),
             'conductanceEFOff': nn.Parameter(torch.tensor([1/4], dtype=dtype).to(device)),
             'conductanceDFOff': nn.Parameter(torch.tensor([1 / 4], dtype=dtype).to(device)),
-            # 'conductanceSOOn': nn.Parameter(torch.tensor([1/2], dtype=dtype).to(device)),
             'tauOn': nn.Parameter(torch.tensor([self.tau_fast], dtype=dtype).to(device)),
             'biasEO': nn.Parameter(torch.tensor([0], dtype=dtype).to(device)),
             'biasDO': nn.Parameter(torch.tensor([1], dtype=dtype).to(device)),
@@ -1227,8 +1221,8 @@ class VisionNet(nn.Module):
         })
         self.syn_input_bandpass_on.params.update(syn_in_bo_params)
         self.syn_input_bandpass_on.setup()
-        tau_bo_fast = self.params['tauBOFast']
-        tau_bo_slow = self.params['tauBOSlow']
+        tau_bo_fast = self.tau_fast
+        tau_bo_slow = self.params['ratioTauBO']*self.tau_fast
         nrn_bo_params = nn.ParameterDict({
             'input_tau': nn.Parameter((self.tau_fast + torch.zeros(self.shape_post_conv, dtype=self.dtype,
                                                                    device=self.device)).to(self.device),
@@ -1294,7 +1288,7 @@ class VisionNet(nn.Module):
         self.syn_input_lowpass.params.update(syn_in_l_params)
         self.syn_input_lowpass.setup()
         # tau_l = self.dt / __calc_cap_from_cutoff__(self.params['freqLO'].data)
-        tau_l = self.params['tauL']
+        tau_l = self.tau_fast
         nrn_l_params = nn.ParameterDict({
             'tau': nn.Parameter(
                 (tau_l + torch.zeros(self.shape_post_conv, dtype=self.dtype, device=self.device)).to(self.device),
@@ -1320,8 +1314,8 @@ class VisionNet(nn.Module):
         })
         self.syn_input_bandpass_off.params.update(syn_in_bf_params)
         self.syn_input_bandpass_off.setup()
-        tau_bf_fast = self.params['tauBFFast']
-        tau_bf_slow = self.params['tauBFSlow']
+        tau_bf_fast = self.tau_fast
+        tau_bf_slow = self.params['ratioTauBF']*self.tau_fast
         nrn_bf_params = nn.ParameterDict({
             'input_tau': nn.Parameter((self.tau_fast + torch.zeros(self.shape_post_conv, dtype=self.dtype,
                                                                    device=self.device)).to(self.device),
@@ -1383,7 +1377,7 @@ class VisionNet(nn.Module):
             'reversal': self.params['reversalEx']
         })
         self.syn_lowpass_enhance_on.params.update(syn_l_eo_params)
-        tau_eo = self.params['tauEO']
+        tau_eo = self.params['ratioTauEO']*self.tau_fast
         nrn_eo_params = nn.ParameterDict({
             'tau': nn.Parameter(
                 (tau_eo + torch.zeros(self.shape_post_conv, dtype=self.dtype, device=self.device)).to(self.device),
@@ -1406,7 +1400,7 @@ class VisionNet(nn.Module):
             'reversal': self.params['reversalIn']
         })
         self.syn_bandpass_on_direct_on.params.update(syn_bo_do_params)
-        tau_do = self.tau_fast
+        tau_do = self.tau_fast*self.params['ratioTauDO']
         nrn_do_params = nn.ParameterDict({
             'tau': nn.Parameter(
                 (tau_do + torch.zeros(self.shape_post_conv, dtype=self.dtype, device=self.device)).to(self.device),
@@ -1430,7 +1424,7 @@ class VisionNet(nn.Module):
             'reversal': self.params['reversalEx']
         })
         self.syn_direct_on_suppress_on.params.update(syn_do_so_params)
-        tau_so = self.tau_fast
+        tau_so = self.tau_fast*self.params['ratioTauSO']
         nrn_so_params = nn.ParameterDict({
             'tau': nn.Parameter(
                 (tau_so + torch.zeros(self.shape_post_conv, dtype=self.dtype, device=self.device)).to(self.device),
@@ -1453,7 +1447,7 @@ class VisionNet(nn.Module):
             'reversal': self.params['reversalEx']
         })
         self.syn_lowpass_enhance_off.params.update(syn_l_ef_params)
-        tau_ef = self.params['tauEF']
+        tau_ef = self.params['ratioTauEF']*self.tau_fast
         nrn_ef_params = nn.ParameterDict({
             'tau': nn.Parameter(
                 (tau_ef + torch.zeros(self.shape_post_conv, dtype=self.dtype, device=self.device)).to(self.device),
@@ -1476,7 +1470,7 @@ class VisionNet(nn.Module):
             'reversal': self.params['reversalEx']
         })
         self.syn_bandpass_off_direct_off.params.update(syn_bf_df_params)
-        tau_df = self.tau_fast
+        tau_df = self.tau_fast*self.params['ratioTauDF']
         nrn_df_params = nn.ParameterDict({
             'tau': nn.Parameter(
                 (tau_df + torch.zeros(self.shape_post_conv, dtype=self.dtype, device=self.device)).to(self.device),
@@ -1500,7 +1494,7 @@ class VisionNet(nn.Module):
             'reversal': self.params['reversalEx']
         })
         self.syn_direct_off_suppress_off.params.update(syn_df_sf_params)
-        tau_sf = self.tau_fast
+        tau_sf = self.tau_fast*self.params['ratioTauSF']
         nrn_sf_params = nn.ParameterDict({
             'tau': nn.Parameter(
                 (tau_sf + torch.zeros(self.shape_post_conv, dtype=self.dtype, device=self.device)).to(self.device),

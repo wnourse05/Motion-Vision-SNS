@@ -4,6 +4,8 @@ import torch
 
 data_test = pickle.load(open('test_no_train_mean.p', 'rb'))
 data_train = pickle.load(open('train_no_train_mean.p', 'rb'))
+field_test = pickle.load(open('field_test_no_train_mean.p', 'rb'))
+field_train = pickle.load(open('field_train_no_train_mean.p', 'rb'))
 
 def plot_data(data, title):
     _, indices = torch.sort(data['targets'])
@@ -71,4 +73,6 @@ def plot_data(data, title):
 
 plot_data(data_test, 'Test Set')
 plot_data(data_train, 'Training Set')
+plot_data(field_test, 'Test Set w/Field')
+plot_data(field_train, 'Training Set w/Field')
 plt.show()

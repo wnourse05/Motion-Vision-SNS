@@ -1175,9 +1175,6 @@ class VisionNet(nn.Module):
         # Lobula Plate
         state_hc = self.hc(syn_on_cw_hc+syn_on_ccw_hc+syn_off_cw_hc+syn_off_ccw_hc, state_hc)
 
-        if torch.any(torch.isnan(state_hc)):
-            print('Uh Oh')
-
         return (state_input, state_bo_input, state_bo_fast, state_bo_slow, state_bo_output, state_lowpass,
                 state_bf_input, state_bf_fast, state_bf_slow, state_bf_output, state_enhance_on, state_direct_on,
                 state_suppress_on, state_enhance_off, state_direct_off, state_suppress_off, state_ccw_on, state_cw_on,

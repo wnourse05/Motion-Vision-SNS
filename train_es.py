@@ -164,10 +164,11 @@ def individual(x, batch, targets):#, pop_history=None):
     shape_input = [24, 64]
     shape_field = 5
     net = VisionNet(dt, shape_input, shape_field)
+    # torch._dynamo.reset()
     with torch.no_grad():
         net.params.update(params)
         net.setup()
-        # net = torch.compile(net, options={'compile_threads':1})
+        # model = torch.compile(net, dynamic=True)
         results = run_batch(batch, targets, net)
         fitness = calc_fitness(results)
     return fitness
@@ -192,82 +193,87 @@ if __name__ == '__main__':
 
     # CMA-ES
     # Optimization Properties
+    seed = 100
+    torch.manual_seed(seed)
     torch.set_num_threads(1)
     num_workers = os.cpu_count()
     pop_size = num_workers
+    # pop_size = 9
     tol = 1e-4
-    max_gen = 3
-    batch_size = 4
-    batch_size = [2,4,8,16,32,64,128,256]
+    max_gen = 10000
+    batch_size = 16
+    # batch_size = [2,4,8,16,32,64,128,256]
     data_train = ClipDataset('FlyWheelTrain3s')
-    for i in range(len(batch_size)):
-        loader_training = DataLoader(data_train, shuffle=True, batch_size=batch_size[i])
-        sigma0 = 0.3
-        options = {'bounds': [bounds_lower, bounds_upper],
-                   'popsize': pop_size,
-                   'seed': 0}
-        optim = cma.CMAEvolutionStrategy(x0, sigma0, options)
+    loader_training = DataLoader(data_train, shuffle=True, batch_size=batch_size)
+    sigma0 = 0.3
+    options = {'bounds': [bounds_lower, bounds_upper],
+               'popsize': pop_size,
+               'seed': seed}
+    optim = cma.CMAEvolutionStrategy(x0, sigma0, options)
 
-        # File management
-        today = str(date.today())
-        prefix = today+'-'+str(time.time())+'-'
+    # File management
+    today = str(date.today())
+    prefix = today+'-'+str(time.time())+'-'
 
-        # Optimization Loop
-        stop = False
-        gen = 0
-        time_start_optim = time.time()
-        pop_history = []
-        fit_history = []
-        pop_best_history = []
-        best_history = []
-        while not stop:
-            time_start_gen = time.time()
+    # Optimization Loop
+    stop = False
+    gen = 0
+    time_start_optim = time.time()
+    pop_history = []
+    fit_history = []
+    pop_best_history = []
+    best_history = []
+    while not stop:
+        time_start_gen = time.time()
 
-            # get data
-            batch, targets = next(iter(loader_training))
-            batch.share_memory_()
-            targets.share_memory_()
+        # get data
+        batch, targets = next(iter(loader_training))
+        batch.share_memory_()
+        targets.share_memory_()
 
-            # get candidates
-            pop = optim.ask()
+        # get candidates
+        pop = optim.ask()
 
-            # calculate fitness
-            with mp.Pool(num_workers) as pool:
-                fitness = pool.starmap(individual, [(x, batch, targets) for x in pop])
+        # calculate fitness
+        with mp.Pool(num_workers) as pool:
+            fitness = pool.starmap(individual, [(x, batch, targets) for x in pop])
+        # fitness = []
+        # for j in range(pop_size):
+        #     fitness.append(individual(pop[j], batch, targets))
+        # print(fitness)
 
-            # update population
-            rank_fit = shape_fitness(fitness, pop_size)
-            optim.tell(pop, rank_fit)
+        # update population
+        rank_fit = shape_fitness(fitness, pop_size)
+        optim.tell(pop, rank_fit)
 
-            # update history
-            pop_history.extend(pop)
-            fit_history.extend(fitness)
-            pop_best_fit = fitness[np.argsort(fitness)[0]]
-            all_best_fit = fit_history[np.argsort(fit_history)[0]]
-            pop_best_history.append(pop_best_fit)
-            best_history.append(all_best_fit)
+        # update history
+        pop_history.extend(pop)
+        fit_history.extend(fitness)
+        pop_best_fit = fitness[np.argsort(fitness)[0]]
+        all_best_fit = fit_history[np.argsort(fit_history)[0]]
+        pop_best_history.append(pop_best_fit)
+        best_history.append(all_best_fit)
 
-            # Log Performance
-            time_end = time.time()
-            time_gen = time_end-time_start_gen
-            time_all = time_end-time_start_optim
-            print(batch_size[i])
-            print('Generation: %i - Generation Time: %i sec - Total Time: %i sec - Population Best: %.4f - All-Time Best: %.4f'%(gen+1, time_gen, time_all, pop_best_fit, all_best_fit))
+        # Log Performance
+        time_end = time.time()
+        time_gen = time_end-time_start_gen
+        time_all = time_end-time_start_optim
+        print('Generation: %i - Generation Time: %i sec - Total Time: %i sec - Population Best: %.4f - All-Time Best: %.4f'%(gen+1, time_gen, time_all, pop_best_fit, all_best_fit))
 
-            # Save to disk
-            # pickle.dump(pop_history, open('Runs/'+prefix+'Pop-History.p','wb'))
-            # pickle.dump(fit_history, open('Runs/'+prefix+'Fit-History.p','wb'))
-            # pickle.dump(pop_best_history, open('Runs/'+prefix+'Pop-Best-History.p','wb'))
-            # pickle.dump(best_history, open('Runs/'+prefix+'Best-History.p','wb'))
+        # Save to disk
+        pickle.dump(pop_history, open('Runs/'+prefix+'Pop-History.p','wb'))
+        pickle.dump(fit_history, open('Runs/'+prefix+'Fit-History.p','wb'))
+        pickle.dump(pop_best_history, open('Runs/'+prefix+'Pop-Best-History.p','wb'))
+        pickle.dump(best_history, open('Runs/'+prefix+'Best-History.p','wb'))
 
-            # Update Iteration
-            gen += 1
-            # Check for termination
-            if gen >= max_gen:
-                print('Terminating from Max Number of Generations')
-                stop = True
-            elif all_best_fit <= tol:
-                print('Terminating from Target Fitness')
-                stop = True
-            else:
-                stop = False
+        # Update Iteration
+        gen += 1
+        # Check for termination
+        if gen >= max_gen:
+            print('Terminating from Max Number of Generations')
+            stop = True
+        elif all_best_fit <= tol:
+            print('Terminating from Target Fitness')
+            stop = True
+        else:
+            stop = False

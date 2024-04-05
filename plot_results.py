@@ -71,8 +71,8 @@ def plot_data(data, title):
     plt.ylabel('Mean Response')
     plt.xlabel('Velocity (rad/s')
 
-plot_data(data_test, 'Test Set')
-plot_data(data_train, 'Training Set')
-plot_data(field_test, 'Test Set w/Field')
-plot_data(field_train, 'Training Set w/Field')
+# plot_data(data_test, 'Test Set')
+# plot_data(data_train, 'Training Set')
+plot_data(field_test, 'Test Set')
+plot_data(field_train, 'Training Set')
 plt.show()

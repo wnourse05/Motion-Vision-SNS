@@ -11,7 +11,7 @@ class ConvTest(nn.Module):
 
         self.tau_fast = self.dt / (10 * self.dt)
 
-        conductance, reversal, target = __calc_2d_field__(amp_rel, std_cen,std_sur, shape_field, reversal_ex, reversal_in)
+        conductance, reversal, target = __calc_2d_field__(amp_rel, std_cen,std_sur, shape_field, reversal_ex, reversal_in, 'cpu')
         print(torch.sum(conductance*reversal))
         print(torch.sum(conductance))
         print(torch.sum(target))

@@ -6,6 +6,8 @@ data_test = pickle.load(open('test_no_train_mean.p', 'rb'))
 data_train = pickle.load(open('train_no_train_mean.p', 'rb'))
 field_test = pickle.load(open('field_test_no_train_mean.p', 'rb'))
 field_train = pickle.load(open('field_train_no_train_mean.p', 'rb'))
+seed_1 = pickle.load(open('2024-03-29-1711743092.2438712_best.p', 'rb'))
+seed_10 = pickle.load(open('2024-03-31-1711915538.720788_best.p', 'rb'))
 
 def accuracy(data):
     ccw = data['ccw']
@@ -69,13 +71,13 @@ def plot_data(data, title):
     peak_max = max([pos_max,neg_max])
     peak_max = peak_max.item()
 
-    for i in range(len(ccw_highs)):
-        ccw_means[i] /= peak_max
-        ccw_lows[i] /= peak_max
-        ccw_highs[i] /= peak_max
-        cw_means[i] /= peak_max
-        cw_lows[i] /= peak_max
-        cw_highs[i] /= peak_max
+    # for i in range(len(ccw_highs)):
+    #     ccw_means[i] /= peak_max
+    #     ccw_lows[i] /= peak_max
+    #     ccw_highs[i] /= peak_max
+    #     cw_means[i] /= peak_max
+    #     cw_lows[i] /= peak_max
+    #     cw_highs[i] /= peak_max
 
     plt.figure()
     plt.subplot(2,1,1)
@@ -93,13 +95,17 @@ def plot_data(data, title):
     plt.ylabel('Mean Normalized Response')
     plt.xlabel('Velocity (rad/s')
 
-plot_data(data_test, 'No Field')
+# plot_data(data_test, 'No Field')
 # plot_data(data_train, 'Training Set')
-plot_data(field_test, 'Field')
+# plot_data(field_test, 'Field')
 # plot_data(field_train, 'Training Set')
-accuracy(data_test)
+# accuracy(data_test)
 # accuracy(data_train)
-accuracy(field_test)
+# accuracy(field_test)
 # accuracy(field_train)
+plot_data(seed_1, 'Seed: 1')
+plot_data(seed_10, 'Seed: 10')
+accuracy(seed_1)
+accuracy(seed_10)
 
 plt.show()

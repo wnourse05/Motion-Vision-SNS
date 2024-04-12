@@ -7,6 +7,16 @@ data_train = pickle.load(open('train_no_train_mean.p', 'rb'))
 field_test = pickle.load(open('field_test_no_train_mean.p', 'rb'))
 field_train = pickle.load(open('field_train_no_train_mean.p', 'rb'))
 
+def accuracy(data):
+    ccw = data['ccw']
+    cw = data['cw']
+    num_trials = len(cw)
+    num_correct = 0
+    for i in range(num_trials):
+        if ccw[i] > cw[i]:
+            num_correct += 1
+    print('%i Trials, %i Correct, %.4f Accuracy Ratio'%(num_trials, num_correct, num_correct/num_trials))
+
 def plot_data(data, title):
     _, indices = torch.sort(data['targets'])
     targets_sorted = data['targets'][indices]
@@ -54,6 +64,18 @@ def plot_data(data, title):
     ccw_highs.append(torch.quantile(ccw_set, 0.95))
     cw_highs.append(torch.quantile(cw_set, 0.95))
     targets.append(0.5)
+    pos_max = max(max([ccw_highs, cw_highs]))
+    neg_max = abs(min(min([ccw_lows, cw_lows])))
+    peak_max = max([pos_max,neg_max])
+    peak_max = peak_max.item()
+
+    for i in range(len(ccw_highs)):
+        ccw_means[i] /= peak_max
+        ccw_lows[i] /= peak_max
+        ccw_highs[i] /= peak_max
+        cw_means[i] /= peak_max
+        cw_lows[i] /= peak_max
+        cw_highs[i] /= peak_max
 
     plt.figure()
     plt.subplot(2,1,1)
@@ -68,11 +90,16 @@ def plot_data(data, title):
     plt.plot(targets, cw_means, color='C1', label='CW')
     plt.fill_between(targets, cw_lows, cw_highs, color='C1', alpha=0.1)
     plt.legend()
-    plt.ylabel('Mean Response')
+    plt.ylabel('Mean Normalized Response')
     plt.xlabel('Velocity (rad/s')
 
-# plot_data(data_test, 'Test Set')
+plot_data(data_test, 'No Field')
 # plot_data(data_train, 'Training Set')
-plot_data(field_test, 'Test Set')
-plot_data(field_train, 'Training Set')
+plot_data(field_test, 'Field')
+# plot_data(field_train, 'Training Set')
+accuracy(data_test)
+# accuracy(data_train)
+accuracy(field_test)
+# accuracy(field_train)
+
 plt.show()

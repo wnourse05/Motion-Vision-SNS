@@ -100,7 +100,7 @@ def run_sample(sample, net: nn.Module):
 params = {'dt': 1/(30*13)*1000, 'device': 'cuda'}
 data_test = ClipDataset('FlyWheelTest3s')
 loader_testing = DataLoader(data_test, shuffle=False)
-trial = '2024-03-31-1711915538.720788'
+trial = '2024-04-05-1712341062.2805214'
 best_history = pickle.load(open('Runs/'+trial+'-Best-History.p', 'rb'))
 fit_history = pickle.load(open('Runs/'+trial+'-Fit-History.p', 'rb'))
 pop_history = pickle.load(open('Runs/'+trial+'-Pop-History.p','rb'))

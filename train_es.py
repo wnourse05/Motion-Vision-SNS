@@ -193,7 +193,7 @@ if __name__ == '__main__':
 
     # CMA-ES
     # Optimization Properties
-    seed = 100
+    seed = 1000
     torch.manual_seed(seed)
     torch.set_num_threads(1)
     num_workers = os.cpu_count()
